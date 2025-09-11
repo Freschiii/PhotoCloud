@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useParams, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Camera, Mail, Phone, Instagram, Sun, Moon, ChevronLeft, ChevronRight, Aperture } from 'lucide-react'
+import { Menu, X, Camera, Mail, Phone, Instagram, Sun, Moon, ChevronLeft, ChevronRight, Aperture, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button.jsx'
+import ClientGallery from './components/ClientGallery.jsx'
+import ClientList from './components/ClientList.jsx'
+import AdminPanel from './components/AdminPanel.jsx'
 import './App.css'
 
 // Import da imagem hero
@@ -75,7 +78,7 @@ function parseProjectTxt(rawText, filePath) {
 
 function importProjectTexts() {
   // Lê todos .txt em assets/projects
-  const projectTxtModules = import.meta.glob('./assets/projects/**/*.txt', { eager: true, as: 'raw' })
+  const projectTxtModules = import.meta.glob('./assets/projects/**/*.txt', { eager: true, query: '?raw', import: 'default' })
   const projects = []
   Object.entries(projectTxtModules).forEach(([path, raw]) => {
     try {
@@ -181,8 +184,63 @@ function generateGalleryImages() {
 // Gera a galeria dinamicamente
 const galleryImages = generateGalleryImages()
 
-function Navigation({ currentPage, setCurrentPage, isDarkMode, toggleDarkMode }) {
+// Wrapper para ClientGallery com React Router
+function ClientGalleryWrapper({ isDarkMode }) {
+  const { clientId } = useParams()
+  const navigate = useNavigate()
+  
+  return (
+    <ClientGallery 
+      clientName={clientId} 
+      isDarkMode={isDarkMode} 
+      onBack={() => navigate('/clientes')} 
+    />
+  )
+}
+
+function Navigation({ isDarkMode, toggleDarkMode }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const navigate = useNavigate()
+  const location = useLocation()
+  
+  const getCurrentPage = () => {
+    if (location.pathname === '/') return 'home'
+    if (location.pathname === '/galeria') return 'galeria'
+    if (location.pathname === '/clientes') return 'clientes'
+    if (location.pathname.startsWith('/cliente/')) return 'cliente'
+    if (location.pathname === '/projetos') return 'projetos'
+    if (location.pathname === '/contato') return 'contato'
+    if (location.pathname === '/admin') return 'admin'
+    return 'home'
+  }
+  
+  const currentPage = getCurrentPage()
+  
+  const handlePageChange = (page) => {
+    switch (page) {
+      case 'home':
+        navigate('/')
+        break
+      case 'galeria':
+        navigate('/galeria')
+        break
+      case 'clientes':
+        navigate('/clientes')
+        break
+      case 'projetos':
+        navigate('/projetos')
+        break
+      case 'contato':
+        navigate('/contato')
+        break
+      case 'admin':
+        navigate('/admin')
+        break
+      default:
+        navigate('/')
+    }
+    setIsMenuOpen(false)
+  }
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b transition-colors duration-300 ${
@@ -195,7 +253,7 @@ function Navigation({ currentPage, setCurrentPage, isDarkMode, toggleDarkMode })
           {/* Left group: Outros projetos */}
           <div className="hidden md:flex items-center space-x-6">
             <button
-              onClick={() => setCurrentPage('projetos')}
+              onClick={() => handlePageChange('projetos')}
               className={`capitalize font-medium transition-colors duration-200 ${
                 currentPage === 'projetos'
                   ? `${isDarkMode ? 'text-indigo-300' : 'text-indigo-700'} opacity-90`
@@ -209,7 +267,7 @@ function Navigation({ currentPage, setCurrentPage, isDarkMode, toggleDarkMode })
           {/* Center icon */}
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
             <button
-              onClick={() => setCurrentPage('home')}
+              onClick={() => handlePageChange('home')}
               className="p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-white/30"
               aria-label="Ir para Home"
             >
@@ -217,12 +275,12 @@ function Navigation({ currentPage, setCurrentPage, isDarkMode, toggleDarkMode })
             </button>
           </div>
 
-          {/* Right group: home/galeria/contato + dark toggle (desktop) */}
+          {/* Right group: home/galeria/clientes/contato + dark toggle (desktop) */}
           <div className="hidden md:flex items-center space-x-8">
-            {['home', 'galeria', 'contato'].map((page) => (
+            {['home', 'galeria', 'clientes', 'contato'].map((page) => (
               <button
                 key={page}
-                onClick={() => setCurrentPage(page)}
+                onClick={() => handlePageChange(page)}
                 className={`capitalize font-medium transition-colors duration-200 ${
                   currentPage === page 
                     ? `${isDarkMode ? 'text-white border-white' : 'text-gray-800 border-gray-800'} border-b-2` 
@@ -289,15 +347,14 @@ function Navigation({ currentPage, setCurrentPage, isDarkMode, toggleDarkMode })
               }`}
             >
               <div className="py-2">
-                {['home', 'galeria', 'contato', 'projetos'].map((page, index) => (
+                {['home', 'galeria', 'clientes', 'contato', 'projetos'].map((page, index) => (
                   <motion.button
                     key={page}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
                     onClick={() => {
-                      setCurrentPage(page)
-                      setIsMenuOpen(false)
+                      handlePageChange(page)
                     }}
                     className={`w-full text-left px-6 py-4 mx-2 my-1 rounded-lg capitalize font-medium transition-all duration-200 ${
                       page === 'projetos'
@@ -338,7 +395,8 @@ function Navigation({ currentPage, setCurrentPage, isDarkMode, toggleDarkMode })
   )
 }
 
-function HomePage({ setCurrentPage, isDarkMode, onImageClick, backgroundImages, currentBackgroundIndex }) {
+function HomePage({ isDarkMode, onImageClick, backgroundImages, currentBackgroundIndex }) {
+  const navigate = useNavigate()
   // Função para embaralhar array e pegar 3 imagens aleatórias
   const getRandomImages = () => {
     const shuffled = [...galleryImages].sort(() => 0.5 - Math.random())
@@ -413,7 +471,6 @@ function HomePage({ setCurrentPage, isDarkMode, onImageClick, backgroundImages, 
                   alt={image.alt}
                   className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
                   style={{ 
-                    imageRendering: 'high-quality',
                     imageRendering: '-webkit-optimize-contrast'
                   }}
                   loading="lazy"
@@ -432,7 +489,7 @@ function HomePage({ setCurrentPage, isDarkMode, onImageClick, backgroundImages, 
                 ? 'bg-white hover:bg-gray-200 text-gray-900' 
                 : 'bg-gray-800 hover:bg-gray-700 text-white'
             }`}
-            onClick={() => setCurrentPage("galeria")}
+            onClick={() => navigate("/galeria")}
           >
             Ver Galeria Completa
           </button>
@@ -584,7 +641,6 @@ function GalleryPage({ isDarkMode, selectedImage }) {
                   alt={image.alt}
                   className="w-full h-80 object-cover transition-transform duration-500 group-hover:scale-110"
                   style={{ 
-                    imageRendering: 'high-quality',
                     imageRendering: '-webkit-optimize-contrast'
                   }}
                   loading="lazy"
@@ -663,7 +719,6 @@ function GalleryPage({ isDarkMode, selectedImage }) {
                 alt={selectedImageForLightbox.alt}
                 className="max-w-[95vw] max-h-[95vh] w-auto h-auto object-contain"
                 style={{ 
-                  imageRendering: 'high-quality',
                   imageRendering: '-webkit-optimize-contrast'
                 }}
                 onClick={(e) => e.stopPropagation()}
@@ -1019,7 +1074,6 @@ function ContactPage({ isDarkMode, biographyImages, currentBiographyIndex }) {
 }
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('home')
   const [selectedImageForGallery, setSelectedImageForGallery] = useState(null)
   const [isDarkMode, setIsDarkMode] = useState(() => {
     // Verifica se há preferência salva no localStorage
@@ -1072,52 +1126,28 @@ function App() {
 
   const handleImageClick = (image) => {
     setSelectedImageForGallery(image)
-    setCurrentPage('galeria')
-  }
-
-  // Limpa a imagem selecionada quando navega para outras páginas
-  const handlePageChange = (page) => {
-    if (page !== 'galeria') {
-      setSelectedImageForGallery(null)
-    }
-    setCurrentPage(page)
-  }
-
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'home':
-        return <HomePage setCurrentPage={handlePageChange} isDarkMode={isDarkMode} onImageClick={handleImageClick} backgroundImages={backgroundImages} currentBackgroundIndex={currentBackgroundIndex} />
-      case 'galeria':
-        return <GalleryPage isDarkMode={isDarkMode} selectedImage={selectedImageForGallery} />
-      case 'projetos':
-        return <ProjectsPage isDarkMode={isDarkMode} />
-      case 'contato':
-        return <ContactPage isDarkMode={isDarkMode} biographyImages={biographyImages} currentBiographyIndex={currentBiographyIndex} />
-      default:
-        return <HomePage setCurrentPage={handlePageChange} isDarkMode={isDarkMode} onImageClick={handleImageClick} />
-    }
+    // Navega para a galeria
+    window.location.href = '/galeria'
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? '' : 'bg-white'}`} style={isDarkMode ? { backgroundColor: '#0F1217' } : {}}>
-      <Navigation 
-        currentPage={currentPage} 
-        setCurrentPage={handlePageChange} 
-        isDarkMode={isDarkMode}
-        toggleDarkMode={toggleDarkMode}
-      />
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentPage}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.3 }}
-        >
-          {renderPage()}
-        </motion.div>
-      </AnimatePresence>
-    </div>
+    <Router>
+      <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? '' : 'bg-white'}`} style={isDarkMode ? { backgroundColor: '#0F1217' } : {}}>
+        <Navigation 
+          isDarkMode={isDarkMode}
+          toggleDarkMode={toggleDarkMode}
+        />
+        <Routes>
+          <Route path="/" element={<HomePage isDarkMode={isDarkMode} onImageClick={handleImageClick} backgroundImages={backgroundImages} currentBackgroundIndex={currentBackgroundIndex} />} />
+          <Route path="/galeria" element={<GalleryPage isDarkMode={isDarkMode} selectedImage={selectedImageForGallery} />} />
+          <Route path="/clientes" element={<ClientList isDarkMode={isDarkMode} />} />
+          <Route path="/cliente/:clientId" element={<ClientGalleryWrapper isDarkMode={isDarkMode} />} />
+          <Route path="/admin" element={<AdminPanel isDarkMode={isDarkMode} />} />
+          <Route path="/projetos" element={<ProjectsPage isDarkMode={isDarkMode} />} />
+          <Route path="/contato" element={<ContactPage isDarkMode={isDarkMode} biographyImages={biographyImages} currentBiographyIndex={currentBiographyIndex} />} />
+        </Routes>
+      </div>
+    </Router>
   )
 }
 
