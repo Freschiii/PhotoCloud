@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, useParams, useNavigate, useLocation } from 'react-router-dom'
+import { HashRouter as Router, Routes, Route, useParams, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Camera, Mail, Phone, Instagram, Sun, Moon, ChevronLeft, ChevronRight, Aperture, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button.jsx'
@@ -1126,8 +1126,6 @@ function App() {
 
   const handleImageClick = (image) => {
     setSelectedImageForGallery(image)
-    // Navega para a galeria
-    window.location.href = '/galeria'
   }
 
   return (
@@ -1145,6 +1143,7 @@ function App() {
           <Route path="/admin" element={<AdminPanel isDarkMode={isDarkMode} />} />
           <Route path="/projetos" element={<ProjectsPage isDarkMode={isDarkMode} />} />
           <Route path="/contato" element={<ContactPage isDarkMode={isDarkMode} biographyImages={biographyImages} currentBiographyIndex={currentBiographyIndex} />} />
+          <Route path="*" element={<HomePage isDarkMode={isDarkMode} onImageClick={handleImageClick} backgroundImages={backgroundImages} currentBackgroundIndex={currentBackgroundIndex} />} />
         </Routes>
       </div>
     </Router>

@@ -6,7 +6,8 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(),tailwindcss()],
-  base: '/',
+  // Para GitHub Pages em Freschiii/PhotoCloud
+  base: '/PhotoCloud/',
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -16,6 +17,8 @@ export default defineConfig({
     historyApiFallback: true,
   },
   build: {
+    // Publicar em docs/ para usar GitHub Pages (main/docs)
+    outDir: 'docs',
     rollupOptions: {
       output: {
         manualChunks: undefined,

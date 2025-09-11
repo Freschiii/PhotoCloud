@@ -978,13 +978,13 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
                   <>
                     <Button
                       onClick={handlePreviousImage}
-                      className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/95 hover:bg-gray-200 text-gray-900 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full w-12 h-12 border-2 border-transparent hover:border-gray-400"
+                      className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/95 hover:bg-gray-300 text-gray-900 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full w-12 h-12 border-2 border-transparent hover:border-gray-500"
                     >
                       <ChevronLeft className="h-5 w-5" />
                     </Button>
                     <Button
                       onClick={handleNextImage}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/95 hover:bg-gray-200 text-gray-900 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full w-12 h-12 border-2 border-transparent hover:border-gray-400"
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/95 hover:bg-gray-300 text-gray-900 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full w-12 h-12 border-2 border-transparent hover:border-gray-500"
                     >
                       <ChevronRight className="h-5 w-5" />
                     </Button>
@@ -995,19 +995,19 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
                 <div className="absolute top-4 left-4 flex space-x-2">
                   <Button
                     onClick={handleZoomOut}
-                    className="bg-white/95 hover:bg-gray-200 text-gray-900 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full w-10 h-10 border-2 border-transparent hover:border-gray-400"
+                    className="bg-white/95 hover:bg-gray-300 text-gray-900 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full w-10 h-10 border-2 border-transparent hover:border-gray-500"
                   >
                     -
                   </Button>
                   <Button
                     onClick={resetZoom}
-                    className="bg-white/95 hover:bg-gray-200 text-gray-900 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full w-10 h-10 text-xs border-2 border-transparent hover:border-gray-400"
+                    className="bg-white/95 hover:bg-gray-300 text-gray-900 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full w-10 h-10 text-xs border-2 border-transparent hover:border-gray-500"
                   >
                     {Math.round(zoomLevel * 100)}%
                   </Button>
                   <Button
                     onClick={handleZoomIn}
-                    className="bg-white/95 hover:bg-gray-200 text-gray-900 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full w-10 h-10 border-2 border-transparent hover:border-gray-400"
+                    className="bg-white/95 hover:bg-gray-300 text-gray-900 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full w-10 h-10 border-2 border-transparent hover:border-gray-500"
                   >
                     +
                   </Button>
@@ -1022,7 +1022,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
                 <div className="absolute top-4 right-4 flex space-x-2">
                   <Button
                     onClick={() => handleDownloadSingle(selectedImage)}
-                    className="bg-white/95 hover:bg-gray-100 text-gray-900 hover:text-green-700 shadow-lg hover:shadow-green-300/60 transition-all duration-200 rounded-full border-2 border-transparent hover:border-green-500 hover:ring-2 hover:ring-green-300/40"
+                    className="bg-white/95 hover:bg-gray-200 text-gray-900 hover:text-green-700 shadow-lg hover:shadow-green-400/60 transition-all duration-200 rounded-full border-2 border-transparent hover:border-green-600 hover:ring-2 hover:ring-green-400/50"
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Baixar
@@ -1033,7 +1033,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
                       setZoomLevel(1)
                       setImagePosition({ x: 0, y: 0 })
                     }}
-                    className="bg-white/95 hover:bg-gray-200 text-gray-900 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full w-10 h-10 border-2 border-transparent hover:border-gray-400"
+                    className="bg-white/95 hover:bg-gray-300 text-gray-900 shadow-lg hover:shadow-xl transition-all duration-200 rounded-full w-10 h-10 border-2 border-transparent hover:border-gray-500"
                   >
                     <X className="h-4 w-4" />
                   </Button>
