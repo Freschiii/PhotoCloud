@@ -264,6 +264,13 @@ async function downloadAllImages(images, clientName, onProgress) {
 
 function ClientGallery({ clientName, isDarkMode, onBack }) {
   const navigate = useNavigate()
+  
+  // Verifica se é admin ANTES de tudo
+  const urlParams = new URLSearchParams(window.location.search)
+  const isAdminFromUrl = urlParams.get('admin') === 'true'
+  const isAdminFromSession = sessionStorage.getItem('isAdmin') === 'true'
+  const isAdmin = isAdminFromSession || isAdminFromUrl
+  
   const [images, setImages] = useState([])
   const [selectedImage, setSelectedImage] = useState(null)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
@@ -273,7 +280,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
   const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0, status: '' })
   const [showDownloadPopup, setShowDownloadPopup] = useState(false)
   const [showTermsModal, setShowTermsModal] = useState(false)
-  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false)
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(isAdmin) // Inicia como true se for admin
   const [clientIdentification, setClientIdentification] = useState('')
   const [isLoadingImages, setIsLoadingImages] = useState(false)
   const [zoomLevel, setZoomLevel] = useState(1)
@@ -363,11 +370,6 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
     return () => observer.disconnect()
   }, [images.length])
 
-  // Verifica se é admin (por sessionStorage ou parâmetro da URL)
-  const urlParams = new URLSearchParams(window.location.search)
-  const isAdminFromUrl = urlParams.get('admin') === 'true'
-  const isAdmin = sessionStorage.getItem('isAdmin') === 'true' || isAdminFromUrl
-  
   // Debug: Log para verificar se está detectando admin
   console.log('isAdmin:', isAdmin, 'isAdminFromUrl:', isAdminFromUrl)
 
