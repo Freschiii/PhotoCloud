@@ -7,24 +7,22 @@
   "summary": "Apaixonado por fotografia e equipamentos audiovisuais. Possuo um home studio básico e interesse em produção musical. Amante de câmeras e sempre em busca de aprimorar minhas habilidades no campo audiovisual.",
   "experience": [
     {
-      "role": "Fotógrafo Freelancer",
-      "company": "Autônomo",
-      "period": "2022 - Presente",
+      "role": "Editor de vídeo e Auxiliar de Estúdio",
+      "company": "Showcase.",
+      "period": "2024 - 2025",
       "items": [
-        "Fotografia de eventos sociais e corporativos",
-        "Sessões de retrato profissional",
-        "Edição e pós-produção de imagens",
-        "Gestão de clientes e orçamentos"
+        "Pós-produção de narração de audiodescrição, incluindo ajuste de pausas e equalização de áudio para uma experiência fluida e natural.",
+        "Suporte técnico para gravações de estúdio, configurando câmeras, iluminação e vídeo para garantir captura de alta qualidade de intérpretes de Libras, minimizando retrabalho.",
+        "Colaboração com profissionais de acessibilidade, roteiristas, narradores e intérpretes de Libras para alinhar conteúdo com necessidades do público-alvo."
       ]
     },
     {
-      "role": "Assistente de Produção",
-      "company": "Eventos Locais",
-      "period": "2021 - 2022",
+      "role": "Designer e Social Media",
+      "company": "Pandolfe Joias",
+      "period": "2019 - 2022",
       "items": [
-        "Suporte técnico em eventos",
-        "Operação de equipamentos audiovisuais",
-        "Coordenação de equipes de produção"
+        "Ampliação da experiência com Adobe Photoshop para arte promocional do Instagram.",
+        "Desenvolvimento de experiência de trabalho em grupo em ambiente de escritório."
       ]
     }
   ],
@@ -41,20 +39,16 @@
   ],
   "skillsSpecific": [
     {
-      "title": "Fotografia",
-      "desc": "Domínio em técnicas de iluminação, composição e pós-produção digital"
+      "title": "Conhecimento Básico de Câmeras",
+      "desc": "Operação e configuração de câmeras para fotografia e filmagem."
     },
     {
-      "title": "Edição de Vídeo",
-      "desc": "Experiência em edição não-linear, motion graphics e correção de cor"
+      "title": "Experiência em Home Studio",
+      "desc": "Configuração e uso de equipamentos básicos de produção musical."
     },
     {
-      "title": "Produção Musical",
-      "desc": "Conhecimento em gravação, mixagem e masterização de áudio"
-    },
-    {
-      "title": "Design Gráfico",
-      "desc": "Criação de identidades visuais, materiais promocionais e layouts"
+      "title": "Capacidade de Aprendizado Contínuo",
+      "desc": "Compromisso com o aprimoramento constante das habilidades e conhecimentos no campo audiovisual."
     }
   ],
   "education": [
