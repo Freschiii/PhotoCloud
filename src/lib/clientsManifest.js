@@ -89,7 +89,7 @@ for (const [folder, files] of folderToFiles.entries()) {
   const meta = folderToMeta.get(folder) || { name: folder, password: '' }
   files.sort((a, b) => a.name.localeCompare(b.name))
   clients.push({
-    id: slugify(folder),
+    id: meta.password || slugify(folder), // Use password as ID if available, otherwise use folder name
     folder,
     name: meta.name || folder,
     password: meta.password || '',
