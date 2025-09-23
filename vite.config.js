@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => ({
   build: {
     // Publicar em docs/ para usar GitHub Pages (main/docs)
     outDir: 'docs',
+    chunkSizeWarningLimit: 1500,
     rollupOptions: {
       output: {
         manualChunks: undefined,
