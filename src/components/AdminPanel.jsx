@@ -268,7 +268,7 @@ export default function AdminPanel({ isDarkMode = true }) {
                 </div>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
 
         {!loading && clients.length === 0 && (
