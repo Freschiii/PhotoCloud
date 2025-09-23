@@ -232,6 +232,9 @@ function Navigation({ isDarkMode, toggleDarkMode }) {
       case 'projetos':
         navigate('/projetos')
         break
+      case 'curriculo':
+        navigate('/curriculo')
+        break
       case 'contato':
         navigate('/contato')
         break
