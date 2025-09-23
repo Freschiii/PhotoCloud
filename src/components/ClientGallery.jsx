@@ -11,12 +11,21 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
   const [imageError, setImageError] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
   
+  const handleImageClick = useCallback(() => {
+    onImageClick(image)
+  }, [onImageClick, image])
+  
+  const handleDownload = useCallback((e) => {
+    e.stopPropagation()
+    onDownloadSingle(image)
+  }, [onDownloadSingle, image])
+  
   return (
     <div
       className={`relative group cursor-pointer overflow-hidden rounded-lg shadow-lg ${
         isSelected ? 'ring-2 ring-blue-500' : ''
       }`}
-      onClick={() => onImageClick(image)}
+      onClick={handleImageClick}
     >
       {!imageError ? (
         <>
@@ -55,10 +64,7 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
           <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <Button
               size="sm"
-              onClick={(e) => {
-                e.stopPropagation()
-                onDownloadSingle(image)
-              }}
+              onClick={handleDownload}
               className="bg-white/95 hover:bg-white text-gray-900 shadow-md hover:shadow-lg transition-all duration-200"
             >
               <Download className="h-4 w-4" />
@@ -387,28 +393,42 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
     // Só sobe para o topo quando avançar de página; ao voltar, mantém posição
     const prev = prevPageRef.current
     if (currentPage > prev) {
-      if (galleryTopRef.current) {
-        galleryTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      } else {
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-      }
+      // Usar requestAnimationFrame para scroll mais suave
+      requestAnimationFrame(() => {
+        if (galleryTopRef.current) {
+          galleryTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+        }
+      })
     }
     prevPageRef.current = currentPage
   }, [currentPage, clientName])
 
-  // Infinite scroll usando IntersectionObserver
+  // Infinite scroll usando IntersectionObserver com throttling
   useEffect(() => {
     if (typeof IntersectionObserver === 'undefined') return
     const sentinel = document.getElementById('infinite-sentinel')
     if (!sentinel) return
+    
+    let timeoutId = null
     const observer = new IntersectionObserver((entries) => {
       const entry = entries[0]
       if (entry.isIntersecting) {
-        setVisibleCount((prev) => Math.min(prev + 24, images.length))
+        // Throttle para evitar múltiplas chamadas
+        if (timeoutId) return
+        timeoutId = setTimeout(() => {
+          setVisibleCount((prev) => Math.min(prev + 24, images.length))
+          timeoutId = null
+        }, 100)
       }
-    })
+    }, { threshold: 0.1 })
+    
     observer.observe(sentinel)
-    return () => observer.disconnect()
+    return () => {
+      observer.disconnect()
+      if (timeoutId) clearTimeout(timeoutId)
+    }
   }, [images.length])
 
   // Debug: Log para verificar se está detectando admin
@@ -684,25 +704,25 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
     ).join(' ')
   }
 
-  const handlePreviousImage = () => {
+  const handlePreviousImage = useCallback(() => {
     const prevIndex = selectedImageIndex > 0 ? selectedImageIndex - 1 : images.length - 1
     setSelectedImageIndex(prevIndex)
     setSelectedImage(images[prevIndex])
-  }
+  }, [selectedImageIndex, images])
 
-  const handleNextImage = () => {
+  const handleNextImage = useCallback(() => {
     const nextIndex = selectedImageIndex < images.length - 1 ? selectedImageIndex + 1 : 0
     setSelectedImageIndex(nextIndex)
     setSelectedImage(images[nextIndex])
-  }
+  }, [selectedImageIndex, images])
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = useCallback((e) => {
     if (selectedImage) {
       if (e.key === 'ArrowLeft') handlePreviousImage()
       if (e.key === 'ArrowRight') handleNextImage()
       if (e.key === 'Escape') setSelectedImage(null)
     }
-  }
+  }, [selectedImage, handlePreviousImage, handleNextImage])
 
   useEffect(() => {
     if (selectedImage) {
