@@ -273,7 +273,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
   const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0, status: '' })
   const [showDownloadPopup, setShowDownloadPopup] = useState(false)
   const [showTermsModal, setShowTermsModal] = useState(false)
-  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(isAdmin)
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false)
   const [clientIdentification, setClientIdentification] = useState('')
   const [isLoadingImages, setIsLoadingImages] = useState(false)
   const [zoomLevel, setZoomLevel] = useState(1)
@@ -401,6 +401,13 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
       setHasAcceptedTerms(true)
     }
   }, [clientName, navigate, isAdmin])
+
+  // Garante que admin sempre tenha acesso
+  useEffect(() => {
+    if (isAdmin) {
+      setHasAcceptedTerms(true)
+    }
+  }, [isAdmin])
 
 
   // Mostra modal de termos se necessário (DESATIVADO TEMPORARIAMENTE)
