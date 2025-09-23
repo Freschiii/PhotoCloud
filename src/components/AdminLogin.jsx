@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Lock, Eye, EyeOff, Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button.jsx'
 
-function AdminLogin({ isDarkMode, onLogin }) {
+function AdminLogin({ isDarkMode, onAuthSuccess }) {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
@@ -18,7 +18,8 @@ function AdminLogin({ isDarkMode, onLogin }) {
     await new Promise(resolve => setTimeout(resolve, 500))
 
     if (password === '5802') {
-      onLogin(true)
+      localStorage.setItem('adminAuth', 'true')
+      onAuthSuccess()
     } else {
       setError('Senha incorreta. Tente novamente.')
       setPassword('')
