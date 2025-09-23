@@ -1,35 +1,74 @@
 {
-  "personal": {
-    "name": "RICARDO FRESCHI",
-    "title": "Estudante de Rádio, TV e Internet",
-    "email": "ricardodias2004@gmail.com",
-    "phone": "+55 11 95779-8732",
-    "address": "Rua Barão de Tatuí, 594 - Vila Buarque"
-  },
+  "name": "RICARDO FRESCHI",
+  "title": "Estudante de Rádio, TV e Internet",
+  "email": "ricardodias2004@gmail.com",
+  "phone": "+55 11 95779-8732",
+  "address": "Rua Barão de Tatuí, 594 - Vila Buarque",
   "summary": "Apaixonado por fotografia e equipamentos audiovisuais. Possuo um home studio básico e interesse em produção musical. Amante de câmeras e sempre em busca de aprimorar minhas habilidades no campo audiovisual.",
-  "skills": {
-    "technical": [
-      "Adobe Photoshop",
-      "Adobe Premiere Pro",
-      "Adobe Illustrator",
-      "Adobe Lightroom",
-      "REAPER",
-      "Audacity",
-      "Studio One",
-      "FL Studio",
-      "Da Vinci Resolve"
-    ]
-  },
+  "experience": [
+    {
+      "role": "Fotógrafo Freelancer",
+      "company": "Autônomo",
+      "period": "2022 - Presente",
+      "items": [
+        "Fotografia de eventos sociais e corporativos",
+        "Sessões de retrato profissional",
+        "Edição e pós-produção de imagens",
+        "Gestão de clientes e orçamentos"
+      ]
+    },
+    {
+      "role": "Assistente de Produção",
+      "company": "Eventos Locais",
+      "period": "2021 - 2022",
+      "items": [
+        "Suporte técnico em eventos",
+        "Operação de equipamentos audiovisuais",
+        "Coordenação de equipes de produção"
+      ]
+    }
+  ],
+  "skillsPrograms": [
+    "Adobe Photoshop",
+    "Adobe Premiere Pro", 
+    "Adobe Illustrator",
+    "Adobe Lightroom",
+    "REAPER",
+    "Audacity",
+    "Studio One",
+    "FL Studio",
+    "Da Vinci Resolve"
+  ],
+  "skillsSpecific": [
+    {
+      "title": "Fotografia",
+      "desc": "Domínio em técnicas de iluminação, composição e pós-produção digital"
+    },
+    {
+      "title": "Edição de Vídeo",
+      "desc": "Experiência em edição não-linear, motion graphics e correção de cor"
+    },
+    {
+      "title": "Produção Musical",
+      "desc": "Conhecimento em gravação, mixagem e masterização de áudio"
+    },
+    {
+      "title": "Design Gráfico",
+      "desc": "Criação de identidades visuais, materiais promocionais e layouts"
+    }
+  ],
   "education": [
     {
       "institution": "Universidade Cruzeiro do Sul",
       "course": "Rádio, TV e Internet",
-      "year": "2024"
+      "year": "2024",
+      "desc": "Formação em comunicação audiovisual com foco em produção de conteúdo"
     },
     {
       "institution": "Saga - School of Art",
-      "course": "Curso",
-      "year": "2016-2020"
+      "course": "Curso de Design",
+      "year": "2016-2020",
+      "desc": "Especialização em design gráfico e desenvolvimento de projetos criativos"
     }
   ]
 }
