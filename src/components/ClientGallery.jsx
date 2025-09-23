@@ -269,7 +269,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
   const urlParams = new URLSearchParams(window.location.search)
   const hashParams = new URLSearchParams(window.location.hash.split('?')[1] || '')
   const hasAdminParam = urlParams.get('admin') === 'true' || hashParams.get('admin') === 'true'
-  const isAdminFromSession = sessionStorage.getItem('isAdmin') === 'true'
+  const isAdminFromSession = localStorage.getItem('adminAuth') === 'true'
   // Só é admin se estiver autenticado E tiver o parâmetro
   const isAdmin = isAdminFromSession && hasAdminParam
   
