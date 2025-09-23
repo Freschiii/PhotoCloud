@@ -105,7 +105,7 @@ export default function AdminPanel({ isDarkMode = true }) {
             <Button
               onClick={handleLogout}
               variant="outline"
-              className={`${isDarkMode ? 'border-red-500/50 text-red-300 hover:bg-red-900/20 hover:border-red-400' : 'border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400'}`}
+              className={`${isDarkMode ? 'border-red-500/50 text-red-300 hover:bg-red-900/30 hover:border-red-400 bg-red-900/10' : 'border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400'}`}
             >
               <LogOut className="w-4 h-4 mr-2" />
               Sair
@@ -233,6 +233,13 @@ export default function AdminPanel({ isDarkMode = true }) {
                       <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mr-2`}>Pasta:</span>
                       <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'} font-mono text-xs`}>
                         {client.realFolderName}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center text-sm">
+                      <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mr-2`}>Código:</span>
+                      <span className={`${isDarkMode ? 'text-indigo-300' : 'text-indigo-600'} font-mono text-xs bg-gray-800 px-2 py-1 rounded`}>
+                        {client.id}
                       </span>
                     </div>
                     
