@@ -4,10 +4,10 @@ import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react(),tailwindcss()],
-  // Para GitHub Pages em Freschiii/PhotoCloud
-  base: '/PhotoCloud/',
+  // Base dinâmica: Vercel/Preview usa '/', GitHub Pages usa '/PhotoCloud/'
+  base: process.env.VERCEL ? '/' : '/PhotoCloud/',
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -25,4 +25,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))
