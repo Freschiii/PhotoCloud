@@ -267,9 +267,16 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
   
   // Verifica se é admin ANTES de tudo
   const urlParams = new URLSearchParams(window.location.search)
-  const isAdminFromUrl = urlParams.get('admin') === 'true'
+  const hashParams = new URLSearchParams(window.location.hash.split('?')[1] || '')
+  const isAdminFromUrl = urlParams.get('admin') === 'true' || hashParams.get('admin') === 'true'
   const isAdminFromSession = sessionStorage.getItem('isAdmin') === 'true'
   const isAdmin = isAdminFromSession || isAdminFromUrl
+  
+  // Debug da URL completa
+  console.log('URL completa:', window.location.href)
+  console.log('URL search:', window.location.search)
+  console.log('URL hash:', window.location.hash)
+  console.log('URL params:', Object.fromEntries(urlParams.entries()))
   
   const [images, setImages] = useState([])
   const [selectedImage, setSelectedImage] = useState(null)
