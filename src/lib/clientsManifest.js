@@ -12,6 +12,12 @@ const txtModules = import.meta.glob('/src/assets/clientes/**/*.txt', {
   as: 'raw',
 })
 
+// Import optional Google Drive lists: one FILE_ID (or full URL) per line
+const driveTxtModules = import.meta.glob('/src/assets/clientes/**/*.drive.txt', {
+  eager: true,
+  as: 'raw',
+})
+
 function slugify(value) {
   return String(value || '')
     .toLowerCase()
@@ -30,6 +36,32 @@ for (const fullPath in imageModules) {
   const url = imageModules[fullPath].default || imageModules[fullPath]
   if (!folderToFiles.has(folder)) folderToFiles.set(folder, [])
   folderToFiles.get(folder).push({ name: file.replace(/\.[^.]+$/, ''), file, src: url })
+}
+
+// Merge Google Drive entries per folder
+for (const fullPath in driveTxtModules) {
+  const parts = fullPath.split('/')
+  const folderIndex = parts.indexOf('clientes') + 1
+  const folder = parts[folderIndex]
+  const raw = driveTxtModules[fullPath] || ''
+  const lines = String(raw)
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+
+  if (!folderToFiles.has(folder)) folderToFiles.set(folder, [])
+  const list = folderToFiles.get(folder)
+
+  let counter = 1
+  for (const line of lines) {
+    // Allow full URLs or plain FILE_IDs
+    const isUrl = /^https?:\/\//i.test(line)
+    const src = isUrl ? line : `https://lh3.googleusercontent.com/d/${line}`
+    const file = isUrl ? line : `drive:${line}`
+    const name = `drive-${String(counter).padStart(4, '0')}`
+    list.push({ name, file, src })
+    counter++
+  }
 }
 
 const folderToMeta = new Map()
