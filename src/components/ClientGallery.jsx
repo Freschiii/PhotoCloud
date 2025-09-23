@@ -325,6 +325,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
         setImages(fallbackImages)
         try { sessionStorage.setItem(`imageCount_${clientName}`, String(fallbackImages.length)) } catch (_) {}
         console.log(`Carregou ${fallbackImages.length} imagens da pasta: ${clientName}`)
+        console.log('Imagens carregadas:', fallbackImages.map(img => img.name))
       } catch (error) {
         console.error('Erro ao carregar informações do cliente:', error)
       }
@@ -387,13 +388,16 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
 
   // Verifica autenticação e redireciona se necessário
   useEffect(() => {
-    const clientAuthenticated = sessionStorage.getItem(`client_${clientName}`) === 'true'
-    
-    // Se é admin, não precisa de autenticação
+    // Se é admin, força acesso total
     if (isAdmin) {
+      console.log('Admin detected - bypassing all authentication')
       setHasAcceptedTerms(true)
+      sessionStorage.setItem('termsAccepted', 'true')
+      sessionStorage.setItem(`client_${clientName}`, 'true')
       return
     }
+    
+    const clientAuthenticated = sessionStorage.getItem(`client_${clientName}`) === 'true'
     
     // Se não é admin e não está autenticado como cliente, redireciona
     if (!clientAuthenticated) {
