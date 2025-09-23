@@ -1147,7 +1147,7 @@ function App() {
           <Route path="/cliente/:clientId" element={<ClientGalleryWrapper isDarkMode={isDarkMode} />} />
           <Route path="/admin" element={<AdminPanel isDarkMode={isDarkMode} />} />
           <Route path="/projetos" element={<ProjectsPage isDarkMode={isDarkMode} />} />
-          <Route path="/curriculo" element={<Resume isDarkMode={isDarkMode} />} />
+          <Route path="/curriculo" element={<Resume isDarkMode={isDarkMode} biographyImages={biographyImages} currentBiographyIndex={currentBiographyIndex} />} />
           <Route path="/contato" element={<ContactPage isDarkMode={isDarkMode} biographyImages={biographyImages} currentBiographyIndex={currentBiographyIndex} />} />
           <Route path="*" element={<HomePage isDarkMode={isDarkMode} onImageClick={handleImageClick} backgroundImages={backgroundImages} currentBackgroundIndex={currentBackgroundIndex} />} />
         </Routes>
