@@ -281,7 +281,7 @@ export default function AdminPanel({ isDarkMode = true }) {
                     className="flex space-x-2"
                   >
                       <Button
-                        onClick={() => window.open(`/#/cliente/${client.id}?admin=true`, '_blank')}
+                        onClick={() => window.location.href = `/#/cliente/${client.id}?admin=true`}
                         className={`flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300`}
                         size="sm"
                       >
