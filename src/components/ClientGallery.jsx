@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { Download, DownloadCloud, X, ChevronLeft, ChevronRight, CheckCircle, ArrowLeft, FileArchive } from 'lucide-react'
+import { Download, DownloadCloud, X, ChevronLeft, ChevronRight, CheckCircle, ArrowLeft, FileArchive, Camera } from 'lucide-react'
 import { Button } from '@/components/ui/button.jsx'
 import JSZip from 'jszip'
 import TermsModal from './TermsModal'
 
 // Componente de imagem otimizado
 const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMode, onDownloadSingle }) => {
+  const [imageError, setImageError] = useState(false)
+  
   return (
     <div
       className={`relative group cursor-pointer overflow-hidden rounded-lg shadow-lg ${
@@ -15,19 +17,29 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
       }`}
       onClick={() => onImageClick(image)}
     >
-      <img
-        src={image.src}
-        alt={image.name}
-        className="w-full aspect-[4/3] object-cover transition-transform duration-200 group-hover:scale-105"
-        loading="lazy"
-        decoding="async"
-        style={{
-          imageRendering: 'pixelated',
-          imageQuality: 'low',
-          maxWidth: '400px',
-          maxHeight: '300px'
-        }}
-      />
+      {!imageError ? (
+        <img
+          src={image.src}
+          alt={image.name}
+          className="w-full aspect-[4/3] object-cover transition-transform duration-200 group-hover:scale-105"
+          loading="lazy"
+          decoding="async"
+          onError={() => {
+            console.log(`Erro ao carregar imagem: ${image.name} - ${image.src}`)
+            setImageError(true)
+          }}
+          style={{
+            imageRendering: 'pixelated',
+            imageQuality: 'low',
+            maxWidth: '400px',
+            maxHeight: '300px'
+          }}
+        />
+      ) : (
+        <div className="w-full aspect-[4/3] bg-gray-200 flex items-center justify-center">
+          <Camera className="w-12 h-12 text-gray-400" />
+        </div>
+      )}
       
       {/* Overlay com controles */}
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-200">
@@ -261,7 +273,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
   const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0, status: '' })
   const [showDownloadPopup, setShowDownloadPopup] = useState(false)
   const [showTermsModal, setShowTermsModal] = useState(false)
-  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false)
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(isAdmin)
   const [clientIdentification, setClientIdentification] = useState('')
   const [isLoadingImages, setIsLoadingImages] = useState(false)
   const [zoomLevel, setZoomLevel] = useState(1)
@@ -372,17 +384,20 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
   useEffect(() => {
     const clientAuthenticated = sessionStorage.getItem(`client_${clientName}`) === 'true'
     
+    // Se é admin, não precisa de autenticação
+    if (isAdmin) {
+      setHasAcceptedTerms(true)
+      return
+    }
+    
     // Se não é admin e não está autenticado como cliente, redireciona
-    if (!isAdmin && !clientAuthenticated) {
+    if (!clientAuthenticated) {
       navigate('/clientes')
       return
     }
     
     const termsAccepted = sessionStorage.getItem('termsAccepted') === 'true'
-    
-    if (isAdmin) {
-      setHasAcceptedTerms(true)
-    } else if (termsAccepted) {
+    if (termsAccepted) {
       setHasAcceptedTerms(true)
     }
   }, [clientName, navigate, isAdmin])
