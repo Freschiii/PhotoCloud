@@ -297,6 +297,8 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
   const [clientPassword, setClientPassword] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const imagesPerPage = 50
+  const totalPages = Math.ceil(images.length / imagesPerPage)
+  const isLastPageFull = images.length % imagesPerPage === 0
   const galleryTopRef = useRef(null)
   const prevPageRef = useRef(1)
 
@@ -779,7 +781,12 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
         {images.length > 0 && (
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {images
-              .slice((currentPage - 1) * imagesPerPage, currentPage * imagesPerPage)
+              .slice(
+                (currentPage - 1) * imagesPerPage, 
+                currentPage === totalPages && isLastPageFull 
+                  ? currentPage * imagesPerPage + 1 
+                  : currentPage * imagesPerPage
+              )
               .map((image, index) => {
                 console.log(`Renderizando imagem ${index + 1}:`, image.name, image.src)
                 return (
@@ -809,12 +816,12 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
               Anterior
             </Button>
             <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'} text-sm`}>
-              Página {currentPage} de {Math.ceil(images.length / imagesPerPage)}
+              Página {currentPage} de {totalPages}
             </span>
             <Button
               variant="outline"
-              disabled={currentPage >= Math.ceil(images.length / imagesPerPage)}
-              onClick={() => setCurrentPage((p) => Math.min(Math.ceil(images.length / imagesPerPage), p + 1))}
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             >
               Próxima
               <ChevronRight className="h-4 w-4 ml-1" />
@@ -822,8 +829,8 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
           </div>
         )}
 
-        {/* âncora do topo da página da galeria - apenas na última página */}
-        {currentPage === Math.ceil(images.length / imagesPerPage) && (
+        {/* âncora do topo da página da galeria - apenas na última página quando cheia */}
+        {currentPage === totalPages && isLastPageFull && (
           <div ref={galleryTopRef} className="h-0" />
         )}
 
