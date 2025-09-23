@@ -1083,7 +1083,7 @@ function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     // Verifica se há preferência salva no localStorage
     const savedTheme = localStorage.getItem('darkMode')
-    return savedTheme ? JSON.parse(savedTheme) : false
+    return savedTheme ? JSON.parse(savedTheme) : true // Padrão: modo escuro
   })
   
   // Estado para imagens de fundo rotativas
