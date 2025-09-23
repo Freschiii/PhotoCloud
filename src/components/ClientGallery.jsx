@@ -351,8 +351,10 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
     return () => observer.disconnect()
   }, [images.length])
 
-  // Verifica se é admin
-  const isAdmin = sessionStorage.getItem('isAdmin') === 'true'
+  // Verifica se é admin (por sessionStorage ou parâmetro da URL)
+  const urlParams = new URLSearchParams(window.location.search)
+  const isAdminFromUrl = urlParams.get('admin') === 'true'
+  const isAdmin = sessionStorage.getItem('isAdmin') === 'true' || isAdminFromUrl
 
   // Busca a senha do cliente para exibir para admins (do manifest)
   useEffect(() => {

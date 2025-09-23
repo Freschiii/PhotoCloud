@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Folder, Upload, Eye, Settings, LogOut } from 'lucide-react'
+import { Folder, Upload, Eye, Settings, LogOut, Copy, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button.jsx'
 import AdminLogin from './AdminLogin.jsx'
 import { getAllClients } from '@/lib/clientsManifest.js'
@@ -32,6 +32,7 @@ export default function AdminPanel({ isDarkMode = true }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
+  const [copiedCode, setCopiedCode] = useState(null)
 
   useEffect(() => {
     // Verifica se já está autenticado
@@ -74,6 +75,16 @@ export default function AdminPanel({ isDarkMode = true }) {
 
   const handleAuthSuccess = () => {
     setIsAuthenticated(true)
+  }
+
+  const copyCode = async (code) => {
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopiedCode(code)
+      setTimeout(() => setCopiedCode(null), 2000)
+    } catch (err) {
+      console.error('Erro ao copiar código:', err)
+    }
   }
 
   if (!isAuthenticated) {
@@ -213,13 +224,6 @@ export default function AdminPanel({ isDarkMode = true }) {
                       <Folder className={`w-12 h-12 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} />
                     </div>
                   )}
-                  {client.hasPassword && (
-                    <div className="absolute top-2 right-2">
-                      <div className={`px-2 py-1 rounded text-xs font-medium ${isDarkMode ? 'bg-yellow-600 text-yellow-100' : 'bg-yellow-100 text-yellow-800'}`}>
-                        Protegido
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Content */}
@@ -238,9 +242,22 @@ export default function AdminPanel({ isDarkMode = true }) {
                     
                     <div className="flex items-center text-sm">
                       <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mr-2`}>Código:</span>
-                      <span className={`${isDarkMode ? 'text-indigo-300' : 'text-indigo-600'} font-mono text-xs bg-gray-800 px-2 py-1 rounded`}>
-                        {client.id}
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className={`${isDarkMode ? 'text-indigo-300' : 'text-indigo-600'} font-mono text-xs bg-gray-800 px-2 py-1 rounded`}>
+                          {client.id}
+                        </span>
+                        <button
+                          onClick={() => copyCode(client.id)}
+                          className={`p-1 rounded transition-colors duration-200 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                          title="Copiar código"
+                        >
+                          {copiedCode === client.id ? (
+                            <Check className="w-3 h-3 text-green-500" />
+                          ) : (
+                            <Copy className="w-3 h-3 text-gray-400" />
+                          )}
+                        </button>
+                      </div>
                     </div>
                     
                     <div className="flex items-center text-sm">
@@ -263,14 +280,14 @@ export default function AdminPanel({ isDarkMode = true }) {
                     whileTap={{ scale: 0.95 }}
                     className="flex space-x-2"
                   >
-                    <Button
-                      onClick={() => window.open(`/#/cliente/${client.id}`, '_blank')}
-                      className={`flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300`}
-                      size="sm"
-                    >
-                      <Eye className="w-4 h-4 mr-2" />
-                      Ver Galeria
-                    </Button>
+                      <Button
+                        onClick={() => window.open(`/#/cliente/${client.id}?admin=true`, '_blank')}
+                        className={`flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300`}
+                        size="sm"
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Ver Galeria
+                      </Button>
                   </motion.div>
                 </div>
               </motion.div>

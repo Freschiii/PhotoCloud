@@ -335,15 +335,17 @@ export default function Resume({ isDarkMode = true, biographyImages = [], curren
             <h3 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
               Idiomas
             </h3>
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {(resumeData?.languages || []).map((lang, i) => (
-                <div key={i} className={`flex justify-between items-center p-3 rounded-lg ${isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50'}`}>
-                  <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-                    {lang.name}
-                  </span>
-                  <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                    {lang.level}
-                  </span>
+                <div key={i} className={`p-4 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg ${isDarkMode ? 'bg-gray-800/50 hover:bg-gray-800/70' : 'bg-gray-50 hover:bg-gray-100'}`}>
+                  <div className="text-center">
+                    <h4 className={`font-semibold text-lg mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                      {lang.name}
+                    </h4>
+                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      {lang.level}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
