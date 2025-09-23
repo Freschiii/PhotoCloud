@@ -329,6 +329,31 @@ export default function Resume({ isDarkMode = true, biographyImages = [], curren
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.7 }}
+            className="mb-8"
+          >
+            <h3 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+              Idiomas
+            </h3>
+            <div className="space-y-3">
+              {(resumeData?.languages || []).map((lang, i) => (
+                <div key={i} className={`flex justify-between items-center p-3 rounded-lg ${isDarkMode ? 'bg-gray-800/50' : 'bg-gray-50'}`}>
+                  <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                    {lang.name}
+                  </span>
+                  <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    {lang.level}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          <div className="w-full h-px bg-gradient-to-r from-transparent via-teal-500/20 to-transparent mb-8"></div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.8 }}
             className="text-center"
           >

@@ -50,10 +50,17 @@ export default function AdminPanel({ isDarkMode = true }) {
   const loadClients = async () => {
     setLoading(true)
     try {
-      const discoveredClients = await discoverClients()
+      // Timeout para evitar carregamento infinito
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), 10000)
+      )
+      
+      const clientsPromise = discoverClients()
+      const discoveredClients = await Promise.race([clientsPromise, timeoutPromise])
       setClients(discoveredClients)
     } catch (error) {
       console.error('Erro ao carregar clientes:', error)
+      setClients([]) // Define array vazio em caso de erro
     } finally {
       setLoading(false)
     }

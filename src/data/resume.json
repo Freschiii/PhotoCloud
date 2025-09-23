@@ -64,6 +64,20 @@
       "year": "2016-2020",
       "desc": "Especialização em design gráfico e desenvolvimento de projetos criativos"
     }
+  ],
+  "languages": [
+    {
+      "name": "Português",
+      "level": "Nativo"
+    },
+    {
+      "name": "Inglês",
+      "level": "Intermediário"
+    },
+    {
+      "name": "Espanhol",
+      "level": "Básico"
+    }
   ]
 }
 
