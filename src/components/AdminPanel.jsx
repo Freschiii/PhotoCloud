@@ -84,69 +84,99 @@ export default function AdminPanel({ isDarkMode = true }) {
     <div className={`min-h-screen pt-20 pb-12 transition-colors duration-300 ${isDarkMode ? '' : 'bg-white'}`} style={isDarkMode ? { backgroundColor: '#0F1217' } : {}}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="flex justify-between items-center mb-8"
+        >
           <div>
-            <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            <h1 className={`text-4xl font-bold bg-gradient-to-r ${isDarkMode ? 'from-white via-gray-200 to-white bg-clip-text text-transparent' : 'from-gray-800 via-gray-600 to-gray-800 bg-clip-text text-transparent'}`}>
               Painel Administrativo
             </h1>
-            <p className={`mt-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            <p className={`mt-2 text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               Gerencie os álbuns de fotos dos clientes
             </p>
           </div>
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            className={`${isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sair
-          </Button>
-        </div>
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              className={`${isDarkMode ? 'border-red-500/50 text-red-300 hover:bg-red-900/20 hover:border-red-400' : 'border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400'}`}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair
+            </Button>
+          </motion.div>
+        </motion.div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+        >
+          <motion.div 
+            whileHover={{ scale: 1.02, y: -2 }}
+            className={`p-6 rounded-xl shadow-lg transition-all duration-300 ${isDarkMode ? 'bg-gradient-to-br from-blue-900/20 to-blue-800/10 border border-blue-500/20' : 'bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200'}`}
+          >
             <div className="flex items-center">
-              <Folder className={`w-8 h-8 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+              <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
+                <Folder className={`w-8 h-8 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+              </div>
               <div className="ml-4">
                 <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                   Total de Clientes
                 </p>
-                <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                <p className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                   {clients.length}
                 </p>
               </div>
             </div>
-          </div>
+          </motion.div>
           
-          <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+          <motion.div 
+            whileHover={{ scale: 1.02, y: -2 }}
+            className={`p-6 rounded-xl shadow-lg transition-all duration-300 ${isDarkMode ? 'bg-gradient-to-br from-green-900/20 to-green-800/10 border border-green-500/20' : 'bg-gradient-to-br from-green-50 to-green-100 border border-green-200'}`}
+          >
             <div className="flex items-center">
-              <Upload className={`w-8 h-8 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+              <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-green-500/20' : 'bg-green-100'}`}>
+                <Upload className={`w-8 h-8 ${isDarkMode ? 'text-green-400' : 'text-green-600'}`} />
+              </div>
               <div className="ml-4">
                 <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                   Total de Fotos
                 </p>
-                <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                <p className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                   {clients.reduce((total, client) => total + client.imageCount, 0)}
                 </p>
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+          <motion.div 
+            whileHover={{ scale: 1.02, y: -2 }}
+            className={`p-6 rounded-xl shadow-lg transition-all duration-300 ${isDarkMode ? 'bg-gradient-to-br from-purple-900/20 to-purple-800/10 border border-purple-500/20' : 'bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200'}`}
+          >
             <div className="flex items-center">
-              <Settings className={`w-8 h-8 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+              <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-purple-500/20' : 'bg-purple-100'}`}>
+                <Settings className={`w-8 h-8 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+              </div>
               <div className="ml-4">
                 <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                   Com Senha
                 </p>
-                <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                <p className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                   {clients.filter(client => client.hasPassword).length}
                 </p>
               </div>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* Clientes List */}
         {loading ? (
@@ -154,14 +184,20 @@ export default function AdminPanel({ isDarkMode = true }) {
             <div className={`animate-spin rounded-full h-8 w-8 border-b-2 ${isDarkMode ? 'border-white' : 'border-gray-900'}`}></div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
             {clients.map((client, index) => (
               <motion.div
                 key={client.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className={`rounded-lg overflow-hidden shadow-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'} border ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}
+                whileHover={{ scale: 1.02, y: -4 }}
+                className={`rounded-xl overflow-hidden shadow-xl transition-all duration-300 ${isDarkMode ? 'bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50' : 'bg-white border border-gray-200'} hover:shadow-2xl`}
               >
                 {/* Thumbnail */}
                 <div className="aspect-video bg-gray-200 relative overflow-hidden">
@@ -215,16 +251,20 @@ export default function AdminPanel({ isDarkMode = true }) {
                     </div>
                   </div>
 
-                  <div className="flex space-x-2">
+                  <motion.div 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex space-x-2"
+                  >
                     <Button
                       onClick={() => window.open(`/#/cliente/${client.id}`, '_blank')}
-                      className="flex-1"
+                      className={`flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300`}
                       size="sm"
                     >
                       <Eye className="w-4 h-4 mr-2" />
                       Ver Galeria
                     </Button>
-                  </div>
+                  </motion.div>
                 </div>
               </motion.div>
             ))}
