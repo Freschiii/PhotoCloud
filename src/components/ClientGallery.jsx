@@ -7,8 +7,9 @@ import JSZip from 'jszip'
 import TermsModal from './TermsModal'
 
 // Componente de imagem otimizado
-const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMode, onDownloadSingle }) => {
+const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMode, onDownloadSingle, index }) => {
   const [imageError, setImageError] = useState(false)
+  const [imageLoaded, setImageLoaded] = useState(false)
   
   return (
     <div
@@ -18,21 +19,30 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
       onClick={() => onImageClick(image)}
     >
       {!imageError ? (
-        <img
-          src={image.src}
-          alt={image.name}
-          className="w-full aspect-[4/3] object-cover transition-transform duration-200 group-hover:scale-105 rounded-lg"
-          loading="lazy"
-          decoding="async"
-          onError={(e) => {
-            console.error(`Erro ao carregar imagem: ${image.name} - ${image.src}`, e)
-            setImageError(true)
-          }}
-          style={{
-            imageRendering: 'pixelated',
-            imageQuality: 'low'
-          }}
-        />
+        <>
+          {!imageLoaded && (
+            <div className="w-full aspect-[4/3] bg-gray-300 animate-pulse rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
+          <img
+            src={image.src}
+            alt={image.name}
+            className={`w-full aspect-[4/3] object-cover transition-all duration-300 group-hover:scale-105 rounded-lg ${imageLoaded ? 'opacity-100' : 'opacity-0 absolute'}`}
+            loading="lazy"
+            decoding="async"
+            fetchPriority={index < 6 ? "high" : "low"}
+            onLoad={() => setImageLoaded(true)}
+            onError={(e) => {
+              console.error(`Erro ao carregar imagem: ${image.name} - ${image.src}`, e)
+              setImageError(true)
+            }}
+            style={{
+              imageRendering: 'auto',
+              imageQuality: 'high'
+            }}
+          />
+        </>
       ) : (
         <div className="w-full aspect-[4/3] bg-gray-200 flex items-center justify-center rounded-lg">
           <Camera className="w-12 h-12 text-gray-400" />
@@ -321,6 +331,17 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
             if (imgs && imgs.length) {
               const mapped = imgs.map(f => ({ name: f.name, src: f.src }))
               setImages(mapped)
+              
+              // Preload das primeiras 6 imagens para carregamento mais rápido
+              mapped.slice(0, 6).forEach((img, index) => {
+                const link = document.createElement('link')
+                link.rel = 'preload'
+                link.as = 'image'
+                link.href = img.src
+                link.fetchPriority = index < 3 ? 'high' : 'low'
+                document.head.appendChild(link)
+              })
+              
               try { sessionStorage.setItem(`imageCount_${clientName}`, String(mapped.length)) } catch (_) {}
               return
             }
@@ -330,6 +351,17 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
         // Fallback leve (caso não tenha manifest em dev)
         const fallbackImages = await getClientImagesEfficiently(clientName)
         setImages(fallbackImages)
+        
+        // Preload das primeiras 6 imagens para carregamento mais rápido
+        fallbackImages.slice(0, 6).forEach((img, index) => {
+          const link = document.createElement('link')
+          link.rel = 'preload'
+          link.as = 'image'
+          link.href = img.src
+          link.fetchPriority = index < 3 ? 'high' : 'low'
+          document.head.appendChild(link)
+        })
+        
         try { sessionStorage.setItem(`imageCount_${clientName}`, String(fallbackImages.length)) } catch (_) {}
         console.log(`Carregou ${fallbackImages.length} imagens da pasta: ${clientName}`)
         console.log('Imagens carregadas:', fallbackImages.map(img => img.name))
@@ -787,6 +819,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
                   <div key={image.name} className="w-full">
                     <OptimizedImage
                       image={image}
+                      index={index}
                       isSelected={selectedImages.has(image.name)}
                       onImageClick={handleImageClick}
                       isSelectMode={isSelectMode}
