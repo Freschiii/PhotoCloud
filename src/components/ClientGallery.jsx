@@ -30,9 +30,7 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
           }}
           style={{
             imageRendering: 'pixelated',
-            imageQuality: 'low',
-            maxWidth: '400px',
-            maxHeight: '300px'
+            imageQuality: 'low'
           }}
         />
       ) : (
@@ -703,7 +701,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
   return (
     <div className={`min-h-screen pt-20 pb-12 transition-colors duration-300 ${isDarkMode ? '' : 'bg-white'}`} 
          style={isDarkMode ? { backgroundColor: '#0F1217' } : {}}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-8">
           {onBack && (
@@ -779,7 +777,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
 
         {/* Galeria de Imagens */}
         {images.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* âncora do topo da página da galeria */}
             <div ref={galleryTopRef} className="h-0" />
             {images
