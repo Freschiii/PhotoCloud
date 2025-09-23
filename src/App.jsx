@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Camera, Mail, Phone, Instagram, Sun, Moon, ChevronLeft, ChevronRight, Aperture, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button.jsx'
 import ClientGallery from './components/ClientGallery.jsx'
+import Resume from './components/Resume.jsx'
 import ClientList from './components/ClientList.jsx'
 import AdminPanel from './components/AdminPanel.jsx'
 import './App.css'
@@ -209,6 +210,7 @@ function Navigation({ isDarkMode, toggleDarkMode }) {
     if (location.pathname === '/clientes') return 'clientes'
     if (location.pathname.startsWith('/cliente/')) return 'cliente'
     if (location.pathname === '/projetos') return 'projetos'
+    if (location.pathname === '/curriculo') return 'curriculo'
     if (location.pathname === '/contato') return 'contato'
     if (location.pathname === '/admin') return 'admin'
     return 'home'
@@ -277,7 +279,7 @@ function Navigation({ isDarkMode, toggleDarkMode }) {
 
           {/* Right group: home/galeria/clientes/contato + dark toggle (desktop) */}
           <div className="hidden md:flex items-center space-x-8">
-            {['home', 'galeria', 'clientes', 'contato'].map((page) => (
+            {['home', 'galeria', 'clientes', 'contato', 'curriculo'].map((page) => (
               <button
                 key={page}
                 onClick={() => handlePageChange(page)}
@@ -287,7 +289,7 @@ function Navigation({ isDarkMode, toggleDarkMode }) {
                     : `${isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-800'}`
                 }`}
               >
-                {page}
+                {page === 'curriculo' ? 'currículo' : page}
               </button>
             ))}
             
@@ -347,7 +349,7 @@ function Navigation({ isDarkMode, toggleDarkMode }) {
               }`}
             >
               <div className="py-2">
-                {['home', 'galeria', 'clientes', 'contato', 'projetos'].map((page, index) => (
+                {['home', 'galeria', 'clientes', 'contato', 'projetos', 'curriculo'].map((page, index) => (
                   <motion.button
                     key={page}
                     initial={{ opacity: 0, x: -20 }}
@@ -381,7 +383,7 @@ function Navigation({ isDarkMode, toggleDarkMode }) {
                           : isDarkMode ? 'bg-gray-500' : 'bg-gray-400'
                       }`} />
                       <span className={`${page === 'projetos' ? 'tracking-wide' : ''} ${currentPage === page && page === 'projetos' ? 'opacity-90' : ''}`}>
-                        {page === 'projetos' ? 'outros projetos' : page}
+                        {page === 'projetos' ? 'outros projetos' : (page === 'curriculo' ? 'currículo' : page)}
                       </span>
                     </div>
                   </motion.button>
@@ -1142,6 +1144,7 @@ function App() {
           <Route path="/cliente/:clientId" element={<ClientGalleryWrapper isDarkMode={isDarkMode} />} />
           <Route path="/admin" element={<AdminPanel isDarkMode={isDarkMode} />} />
           <Route path="/projetos" element={<ProjectsPage isDarkMode={isDarkMode} />} />
+          <Route path="/curriculo" element={<Resume isDarkMode={isDarkMode} />} />
           <Route path="/contato" element={<ContactPage isDarkMode={isDarkMode} biographyImages={biographyImages} currentBiographyIndex={currentBiographyIndex} />} />
           <Route path="*" element={<HomePage isDarkMode={isDarkMode} onImageClick={handleImageClick} backgroundImages={backgroundImages} currentBackgroundIndex={currentBackgroundIndex} />} />
         </Routes>

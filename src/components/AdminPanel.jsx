@@ -166,7 +166,7 @@ async function checkAndAddClient(clientFolder, clients) {
         } catch (error) {
           // Continua tentando
         }
-      }
+        https://github.com/Freschiii/PhotoCloudse      }
       
       // Se encontrou imagens, faz uma estimativa mais inteligente
       if (foundImages > 0) {
