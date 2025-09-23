@@ -21,7 +21,7 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
         <img
           src={image.src}
           alt={image.name}
-          className="w-full aspect-square object-cover transition-transform duration-200 group-hover:scale-105 rounded-lg"
+          className="w-full aspect-[4/3] object-cover transition-transform duration-200 group-hover:scale-105 rounded-lg"
           loading="lazy"
           decoding="async"
           onError={(e) => {
@@ -34,7 +34,7 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
           }}
         />
       ) : (
-        <div className="w-full aspect-square bg-gray-200 flex items-center justify-center rounded-lg">
+        <div className="w-full aspect-[4/3] bg-gray-200 flex items-center justify-center rounded-lg">
           <Camera className="w-12 h-12 text-gray-400" />
         </div>
       )}
@@ -778,8 +778,6 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
         {/* Galeria de Imagens */}
         {images.length > 0 && (
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* âncora do topo da página da galeria */}
-            <div ref={galleryTopRef} className="h-0" />
             {images
               .slice((currentPage - 1) * imagesPerPage, currentPage * imagesPerPage)
               .map((image, index) => {
@@ -796,6 +794,8 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
                   </div>
                 )
               })}
+            {/* âncora do topo da página da galeria - movida para o final */}
+            <div ref={galleryTopRef} className="h-0" />
           </div>
         )}
 
