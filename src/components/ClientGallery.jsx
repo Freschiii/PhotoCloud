@@ -334,6 +334,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
         try { sessionStorage.setItem(`imageCount_${clientName}`, String(fallbackImages.length)) } catch (_) {}
         console.log(`Carregou ${fallbackImages.length} imagens da pasta: ${clientName}`)
         console.log('Imagens carregadas:', fallbackImages.map(img => img.name))
+        console.log('Primeiras 10 imagens:', fallbackImages.slice(0, 10).map(img => ({ name: img.name, src: img.src })))
       } catch (error) {
         console.error('Erro ao carregar informações do cliente:', error)
       }
@@ -783,16 +784,19 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
             <div ref={galleryTopRef} className="h-0" />
             {images
               .slice((currentPage - 1) * imagesPerPage, currentPage * imagesPerPage)
-              .map((image, index) => (
-              <OptimizedImage
-                key={image.name}
-                image={image}
-                isSelected={selectedImages.has(image.name)}
-                onImageClick={handleImageClick}
-                isSelectMode={isSelectMode}
-                onDownloadSingle={handleDownloadSingle}
-              />
-            ))}
+              .map((image, index) => {
+                console.log(`Renderizando imagem ${index + 1}:`, image.name, image.src)
+                return (
+                  <OptimizedImage
+                    key={image.name}
+                    image={image}
+                    isSelected={selectedImages.has(image.name)}
+                    onImageClick={handleImageClick}
+                    isSelectMode={isSelectMode}
+                    onDownloadSingle={handleDownloadSingle}
+                  />
+                )
+              })}
           </div>
         )}
 
