@@ -794,8 +794,6 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
                   </div>
                 )
               })}
-            {/* âncora do topo da página da galeria - movida para o final */}
-            <div ref={galleryTopRef} className="h-0" />
           </div>
         )}
 
@@ -823,6 +821,9 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
             </Button>
           </div>
         )}
+
+        {/* âncora do topo da página da galeria - movida para o final de tudo */}
+        <div ref={galleryTopRef} className="h-0" />
 
         {/* Botão Flutuante de Download - Aparece quando há imagens selecionadas */}
         {isSelectMode && selectedImages.size > 0 && (
