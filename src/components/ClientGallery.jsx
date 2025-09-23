@@ -268,9 +268,10 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
   // Verifica se é admin ANTES de tudo
   const urlParams = new URLSearchParams(window.location.search)
   const hashParams = new URLSearchParams(window.location.hash.split('?')[1] || '')
-  const isAdminFromUrl = urlParams.get('admin') === 'true' || hashParams.get('admin') === 'true'
+  const hasAdminParam = urlParams.get('admin') === 'true' || hashParams.get('admin') === 'true'
   const isAdminFromSession = sessionStorage.getItem('isAdmin') === 'true'
-  const isAdmin = isAdminFromSession || isAdminFromUrl
+  // Só é admin se estiver autenticado E tiver o parâmetro
+  const isAdmin = isAdminFromSession && hasAdminParam
   
   // Debug da URL completa
   console.log('URL completa:', window.location.href)
@@ -379,7 +380,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
   }, [images.length])
 
   // Debug: Log para verificar se está detectando admin
-  console.log('isAdmin:', isAdmin, 'isAdminFromUrl:', isAdminFromUrl)
+  console.log('isAdmin:', isAdmin, 'hasAdminParam:', hasAdminParam, 'isAdminFromSession:', isAdminFromSession)
 
   // Busca a senha do cliente para exibir para admins (do manifest)
   useEffect(() => {
