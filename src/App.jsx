@@ -9,6 +9,17 @@ import ClientList from './components/ClientList.jsx'
 import AdminPanel from './components/AdminPanel.jsx'
 import './App.css'
 
+// Componente para controlar a rolagem da página
+function ScrollToTop() {
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
+
+  return null
+}
+
 // Import da imagem hero
 import heroImage from './assets/IMG_9998.jpg'
 
@@ -1136,6 +1147,7 @@ function App() {
   return (
     <Router>
       <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? '' : 'bg-white'}`} style={isDarkMode ? { backgroundColor: '#0F1217' } : {}}>
+        <ScrollToTop />
         <Navigation 
           isDarkMode={isDarkMode}
           toggleDarkMode={toggleDarkMode}
