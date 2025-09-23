@@ -21,7 +21,7 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
         <img
           src={image.src}
           alt={image.name}
-          className="w-full h-auto object-cover transition-transform duration-200 group-hover:scale-105"
+          className="w-full h-auto object-cover transition-transform duration-200 group-hover:scale-105 rounded-lg"
           loading="lazy"
           decoding="async"
           onError={(e) => {
@@ -34,7 +34,7 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
           }}
         />
       ) : (
-        <div className="w-full h-64 bg-gray-200 flex items-center justify-center">
+        <div className="w-full h-64 bg-gray-200 flex items-center justify-center rounded-lg">
           <Camera className="w-12 h-12 text-gray-400" />
         </div>
       )}
@@ -777,7 +777,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
 
         {/* Galeria de Imagens */}
         {images.length > 0 && (
-          <div className="w-full flex flex-wrap gap-8 justify-center">
+          <div className="w-full columns-1 md:columns-2 lg:columns-3 gap-8 space-y-8">
             {/* âncora do topo da página da galeria */}
             <div ref={galleryTopRef} className="h-0" />
             {images
@@ -785,7 +785,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
               .map((image, index) => {
                 console.log(`Renderizando imagem ${index + 1}:`, image.name, image.src)
                 return (
-                  <div key={image.name} className="w-full sm:w-1/2 lg:w-1/3 max-w-sm">
+                  <div key={image.name} className="break-inside-avoid mb-8">
                     <OptimizedImage
                       image={image}
                       isSelected={selectedImages.has(image.name)}
