@@ -822,8 +822,10 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
           </div>
         )}
 
-        {/* âncora do topo da página da galeria - movida para o final de tudo */}
-        <div ref={galleryTopRef} className="h-0" />
+        {/* âncora do topo da página da galeria - apenas na última página */}
+        {currentPage === Math.ceil(images.length / imagesPerPage) && (
+          <div ref={galleryTopRef} className="h-0" />
+        )}
 
         {/* Botão Flutuante de Download - Aparece quando há imagens selecionadas */}
         {isSelectMode && selectedImages.size > 0 && (
