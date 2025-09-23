@@ -21,7 +21,7 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
         <img
           src={image.src}
           alt={image.name}
-          className="w-full aspect-[4/3] object-cover transition-transform duration-200 group-hover:scale-105"
+          className="w-full h-auto object-cover transition-transform duration-200 group-hover:scale-105"
           loading="lazy"
           decoding="async"
           onError={(e) => {
@@ -34,7 +34,7 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
           }}
         />
       ) : (
-        <div className="w-full aspect-[4/3] bg-gray-200 flex items-center justify-center">
+        <div className="w-full h-64 bg-gray-200 flex items-center justify-center">
           <Camera className="w-12 h-12 text-gray-400" />
         </div>
       )}
@@ -777,7 +777,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
 
         {/* Galeria de Imagens */}
         {images.length > 0 && (
-          <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="w-full flex flex-wrap gap-8 justify-center">
             {/* âncora do topo da página da galeria */}
             <div ref={galleryTopRef} className="h-0" />
             {images
@@ -785,14 +785,15 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
               .map((image, index) => {
                 console.log(`Renderizando imagem ${index + 1}:`, image.name, image.src)
                 return (
-                  <OptimizedImage
-                    key={image.name}
-                    image={image}
-                    isSelected={selectedImages.has(image.name)}
-                    onImageClick={handleImageClick}
-                    isSelectMode={isSelectMode}
-                    onDownloadSingle={handleDownloadSingle}
-                  />
+                  <div key={image.name} className="w-full sm:w-1/2 lg:w-1/3 max-w-sm">
+                    <OptimizedImage
+                      image={image}
+                      isSelected={selectedImages.has(image.name)}
+                      onImageClick={handleImageClick}
+                      isSelectMode={isSelectMode}
+                      onDownloadSingle={handleDownloadSingle}
+                    />
+                  </div>
                 )
               })}
           </div>
