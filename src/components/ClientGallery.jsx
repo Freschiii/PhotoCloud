@@ -24,8 +24,8 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
           className="w-full aspect-[4/3] object-cover transition-transform duration-200 group-hover:scale-105"
           loading="lazy"
           decoding="async"
-          onError={() => {
-            console.log(`Erro ao carregar imagem: ${image.name} - ${image.src}`)
+          onError={(e) => {
+            console.error(`Erro ao carregar imagem: ${image.name} - ${image.src}`, e)
             setImageError(true)
           }}
           style={{
@@ -367,6 +367,9 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
   const urlParams = new URLSearchParams(window.location.search)
   const isAdminFromUrl = urlParams.get('admin') === 'true'
   const isAdmin = sessionStorage.getItem('isAdmin') === 'true' || isAdminFromUrl
+  
+  // Debug: Log para verificar se está detectando admin
+  console.log('isAdmin:', isAdmin, 'isAdminFromUrl:', isAdminFromUrl)
 
   // Busca a senha do cliente para exibir para admins (do manifest)
   useEffect(() => {
@@ -404,7 +407,9 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
 
   // Garante que admin sempre tenha acesso
   useEffect(() => {
+    console.log('useEffect admin check:', isAdmin)
     if (isAdmin) {
+      console.log('Setting hasAcceptedTerms to true for admin')
       setHasAcceptedTerms(true)
     }
   }, [isAdmin])
