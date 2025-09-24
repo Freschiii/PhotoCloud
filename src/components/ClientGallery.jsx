@@ -336,10 +336,12 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
             const imgs = getClientImages(clientName)
             if (imgs && imgs.length) {
               const mapped = imgs.map(f => ({ name: f.name, src: f.src }))
-              setImages(mapped)
+              // Embaralha as imagens para ordem aleatória
+              const shuffled = [...mapped].sort(() => Math.random() - 0.5)
+              setImages(shuffled)
               
               // Preload das primeiras 6 imagens para carregamento mais rápido
-              mapped.slice(0, 6).forEach((img, index) => {
+              shuffled.slice(0, 6).forEach((img, index) => {
                 const link = document.createElement('link')
                 link.rel = 'preload'
                 link.as = 'image'
@@ -356,10 +358,12 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
 
         // Fallback leve (caso não tenha manifest em dev)
         const fallbackImages = await getClientImagesEfficiently(clientName)
-        setImages(fallbackImages)
+        // Embaralha as imagens para ordem aleatória
+        const shuffledFallback = [...fallbackImages].sort(() => Math.random() - 0.5)
+        setImages(shuffledFallback)
         
         // Preload das primeiras 6 imagens para carregamento mais rápido
-        fallbackImages.slice(0, 6).forEach((img, index) => {
+        shuffledFallback.slice(0, 6).forEach((img, index) => {
           const link = document.createElement('link')
           link.rel = 'preload'
           link.as = 'image'
@@ -368,10 +372,10 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
           document.head.appendChild(link)
         })
         
-        try { sessionStorage.setItem(`imageCount_${clientName}`, String(fallbackImages.length)) } catch (_) {}
-        console.log(`Carregou ${fallbackImages.length} imagens da pasta: ${clientName}`)
-        console.log('Imagens carregadas:', fallbackImages.map(img => img.name))
-        console.log('Primeiras 10 imagens:', fallbackImages.slice(0, 10).map(img => ({ name: img.name, src: img.src })))
+        try { sessionStorage.setItem(`imageCount_${clientName}`, String(shuffledFallback.length)) } catch (_) {}
+        console.log(`Carregou ${shuffledFallback.length} imagens da pasta: ${clientName}`)
+        console.log('Imagens carregadas:', shuffledFallback.map(img => img.name))
+        console.log('Primeiras 10 imagens:', shuffledFallback.slice(0, 10).map(img => ({ name: img.name, src: img.src })))
       } catch (error) {
         console.error('Erro ao carregar informações do cliente:', error)
       }

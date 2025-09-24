@@ -163,6 +163,16 @@ function generateAltText(category, imageName) {
   return altTexts[category] || 'Fotografia profissional'
 }
 
+// Função para embaralhar array usando Fisher-Yates shuffle
+function shuffleArray(array) {
+  const shuffled = [...array]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
 // Gera a galeria dinamicamente
 function generateGalleryImages() {
   const allImages = importAllImages()
@@ -183,14 +193,8 @@ function generateGalleryImages() {
     })
   })
   
-  // Ordena as imagens: primeiro por categoria, depois por nome
-  return galleryImages.sort((a, b) => {
-    if (a.category !== b.category) {
-      const categoryOrder = ['retratos', 'eventos', 'grupos', 'paisagens']
-      return categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category)
-    }
-    return a.name.localeCompare(b.name)
-  })
+  // Embaralha as imagens para ordem aleatória
+  return shuffleArray(galleryImages)
 }
 
 // Gera a galeria dinamicamente
