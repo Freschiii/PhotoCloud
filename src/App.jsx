@@ -1160,7 +1160,7 @@ function App() {
           toggleDarkMode={toggleDarkMode}
         />
         <Routes>
-          <Route path="/" element={<HomePage isDarkMode={isDarkMode} onImageClick={handleImageClick} backgroundImages={backgroundImages} currentBackgroundIndex={currentBackgroundIndex} />} />
+          <Route path="/" element={<HomePage isDarkMode={isDarkMode} onImageClick={(image) => setSelectedImageForGallery(image)} backgroundImages={backgroundImages} currentBackgroundIndex={currentBackgroundIndex} />} />
           <Route path="/galeria" element={<GalleryPage isDarkMode={isDarkMode} selectedImage={selectedImageForGallery} />} />
           <Route path="/clientes" element={<ClientList isDarkMode={isDarkMode} />} />
           <Route path="/cliente/:clientId" element={<ClientGalleryWrapper isDarkMode={isDarkMode} />} />
@@ -1168,7 +1168,7 @@ function App() {
           <Route path="/projetos" element={<ProjectsPage isDarkMode={isDarkMode} />} />
           <Route path="/curriculo" element={<Resume isDarkMode={isDarkMode} biographyImages={biographyImages} currentBiographyIndex={currentBiographyIndex} />} />
           <Route path="/contato" element={<ContactPage isDarkMode={isDarkMode} biographyImages={biographyImages} currentBiographyIndex={currentBiographyIndex} />} />
-          <Route path="*" element={<HomePage isDarkMode={isDarkMode} onImageClick={handleImageClick} backgroundImages={backgroundImages} currentBackgroundIndex={currentBackgroundIndex} />} />
+          <Route path="*" element={<HomePage isDarkMode={isDarkMode} onImageClick={(image) => setSelectedImageForGallery(image)} backgroundImages={backgroundImages} currentBackgroundIndex={currentBackgroundIndex} />} />
         </Routes>
       </div>
     </Router>
