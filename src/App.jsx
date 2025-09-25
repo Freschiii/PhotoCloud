@@ -425,6 +425,12 @@ function HomePage({ isDarkMode, onImageClick, backgroundImages, currentBackgroun
 
   const [randomImages] = useState(() => getRandomImages())
 
+  // Função para lidar com clique nas imagens
+  const handleImageClick = (image) => {
+    onImageClick(image)
+    navigate('/galeria')
+  }
+
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? '' : 'bg-white'}`} style={isDarkMode ? { backgroundColor: '#0F1217' } : {}}>
       {/* Hero Section */}
@@ -484,7 +490,7 @@ function HomePage({ isDarkMode, onImageClick, backgroundImages, currentBackgroun
               <div
                 key={index}
                 className="relative group cursor-pointer overflow-hidden rounded-lg shadow-lg"
-                onClick={() => onImageClick(image)}
+                onClick={() => handleImageClick(image)}
               >
                 <img
                   src={image.src}
@@ -1094,7 +1100,6 @@ function ContactPage({ isDarkMode, biographyImages, currentBiographyIndex }) {
 }
 
 function App() {
-  const navigate = useNavigate()
   const [selectedImageForGallery, setSelectedImageForGallery] = useState(null)
   const [isDarkMode, setIsDarkMode] = useState(() => {
     // Verifica se há preferência salva no localStorage
@@ -1145,10 +1150,6 @@ function App() {
     setIsDarkMode(!isDarkMode)
   }
 
-  const handleImageClick = (image) => {
-    setSelectedImageForGallery(image)
-    navigate('/galeria')
-  }
 
   return (
     <Router>
