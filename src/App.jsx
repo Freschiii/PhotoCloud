@@ -1094,6 +1094,7 @@ function ContactPage({ isDarkMode, biographyImages, currentBiographyIndex }) {
 }
 
 function App() {
+  const navigate = useNavigate()
   const [selectedImageForGallery, setSelectedImageForGallery] = useState(null)
   const [isDarkMode, setIsDarkMode] = useState(() => {
     // Verifica se há preferência salva no localStorage
@@ -1146,6 +1147,7 @@ function App() {
 
   const handleImageClick = (image) => {
     setSelectedImageForGallery(image)
+    navigate('/galeria')
   }
 
   return (
