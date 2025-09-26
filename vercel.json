@@ -1,7 +1,10 @@
 {
-  "installCommand": "npm install --legacy-peer-deps --no-audit --no-fund",
   "buildCommand": "npm run build",
-  "outputDirectory": "docs",
-  "framework": "vite"
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
-
