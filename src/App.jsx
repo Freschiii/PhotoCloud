@@ -272,17 +272,17 @@ function Navigation({ isDarkMode, toggleDarkMode }) {
     }`} style={isDarkMode ? { backgroundColor: 'rgba(7, 9, 13, 0.9)' } : {}}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 relative">
-          {/* Left group: Outros projetos */}
+          {/* Left group: Projetos */}
           <div className="hidden md:flex items-center space-x-6">
             <button
               onClick={() => handlePageChange('projetos')}
-              className={`capitalize font-medium transition-colors duration-200 ${
+              className={`font-medium transition-colors duration-200 ${
                 currentPage === 'projetos'
-                  ? `${isDarkMode ? 'text-indigo-300' : 'text-indigo-700'} opacity-90`
+                  ? `${isDarkMode ? 'text-indigo-300' : 'text-indigo-700'} font-semibold`
                   : `${isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-800'} text-sm`
               }`}
             >
-              outros projetos
+              projetos
             </button>
           </div>
 
@@ -309,7 +309,7 @@ function Navigation({ isDarkMode, toggleDarkMode }) {
                     : `${isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-800'}`
                 }`}
               >
-                {page === 'curriculo' ? 'currículo' : page}
+                {page === 'curriculo' ? 'currículo' : (page === 'clientes' ? 'Área do Cliente' : page)}
               </button>
             ))}
             
