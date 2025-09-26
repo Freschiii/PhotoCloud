@@ -616,6 +616,9 @@ function GalleryPage({ isDarkMode, selectedImage }) {
     setSelectedImageForLightbox(image)
     // Bloquear scroll do body
     document.body.style.overflow = 'hidden'
+    document.body.style.position = 'fixed'
+    document.body.style.width = '100%'
+    document.body.style.height = '100%'
   }
 
   // Função para fechar o lightbox e limpar o estado
@@ -623,6 +626,9 @@ function GalleryPage({ isDarkMode, selectedImage }) {
     setSelectedImageForLightbox(null)
     // Restaurar scroll do body
     document.body.style.overflow = 'auto'
+    document.body.style.position = 'static'
+    document.body.style.width = 'auto'
+    document.body.style.height = 'auto'
   }
 
   // Função para navegar entre imagens no lightbox
@@ -756,14 +762,20 @@ function GalleryPage({ isDarkMode, selectedImage }) {
         {/* Lightbox */}
         <AnimatePresence>
           {selectedImageForLightbox && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+            <div
               className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
-              onClick={closeLightbox}
+              style={{ 
+                touchAction: 'none',
+                overflow: 'hidden',
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0
+              }}
               onTouchStart={(e) => {
                 e.preventDefault()
+                e.stopPropagation()
                 if (e.touches.length === 1) {
                   setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY })
                   setIsDragging(true)
@@ -771,13 +783,11 @@ function GalleryPage({ isDarkMode, selectedImage }) {
               }}
               onTouchMove={(e) => {
                 e.preventDefault()
-                if (e.touches.length === 1 && isDragging) {
-                  // Prevenir scroll durante o toque
-                  e.preventDefault()
-                }
+                e.stopPropagation()
               }}
               onTouchEnd={(e) => {
                 e.preventDefault()
+                e.stopPropagation()
                 if (e.touches.length === 0 && isDragging) {
                   const touch = e.changedTouches[0]
                   const deltaX = touch.clientX - dragStart.x
@@ -795,23 +805,18 @@ function GalleryPage({ isDarkMode, selectedImage }) {
                   setIsDragging(false)
                 }
               }}
-              style={{ touchAction: 'none' }}
+              onClick={closeLightbox}
             >
-              <motion.img
-                initial={{ scale: 0.8 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0.8 }}
+              <img
                 src={selectedImageForLightbox.src}
                 alt={selectedImageForLightbox.alt}
                 className="max-w-[95vw] max-h-[95vh] w-auto h-auto object-contain"
                 style={{ 
                   imageRendering: '-webkit-optimize-contrast',
-                  touchAction: 'none'
+                  touchAction: 'none',
+                  pointerEvents: 'none'
                 }}
                 onClick={(e) => e.stopPropagation()}
-                onTouchStart={(e) => e.preventDefault()}
-                onTouchMove={(e) => e.preventDefault()}
-                onTouchEnd={(e) => e.preventDefault()}
               />
               
               {/* Botões de navegação */}
@@ -820,7 +825,7 @@ function GalleryPage({ isDarkMode, selectedImage }) {
                   e.stopPropagation()
                   navigateLightbox(-1)
                 }}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 bg-black/50 rounded-full p-3 transition-colors duration-200"
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 bg-black/50 rounded-full p-3 transition-colors duration-200 z-10"
               >
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -832,7 +837,7 @@ function GalleryPage({ isDarkMode, selectedImage }) {
                   e.stopPropagation()
                   navigateLightbox(1)
                 }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 bg-black/50 rounded-full p-3 transition-colors duration-200"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 bg-black/50 rounded-full p-3 transition-colors duration-200 z-10"
               >
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -841,11 +846,11 @@ function GalleryPage({ isDarkMode, selectedImage }) {
               
               <button
                 onClick={closeLightbox}
-                className="absolute top-4 right-4 text-white hover:text-gray-300 bg-black/50 rounded-full p-2 transition-colors duration-200"
+                className="absolute top-4 right-4 text-white hover:text-gray-300 bg-black/50 rounded-full p-2 transition-colors duration-200 z-10"
               >
                 <X className="h-8 w-8" />
               </button>
-            </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </div>
