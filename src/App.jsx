@@ -76,7 +76,7 @@ function parseProjectTxt(rawText, filePath) {
       else if (key === 'descrição' || key === 'descricao' || key === 'description') {
         collectingDescription = true
         descriptionBuffer = value ? [value] : []
-      } else if (key === 'youtube' || key === 'link' || key === 'url') data.youtube = value
+      } else if (key === 'youtube' || key === 'link' || key === 'url' || key === 'tiktok') data.youtube = value
       else if (key === 'videofile' || key === 'arquivo' || key === 'arquivo de vídeo' || key === 'arquivo de video') data.videoFile = value
       else if (key === 'função' || key === 'funcao' || key === 'role') data.role = value
       else if (key === 'ano' || key === 'year') data.year = value
@@ -95,16 +95,18 @@ function importProjectTexts() {
   Object.entries(projectTxtModules).forEach(([path, raw]) => {
     try {
       const parsed = parseProjectTxt(raw, path)
-      // Valores padrão e normalização
-      projects.push({
-        id: parsed.id,
-        title: parsed.title || 'Projeto sem título',
-        description: parsed.description || '',
-        videoUrl: parsed.youtube || '',
-        videoFile: parsed.videoFile || '',
-        role: parsed.role || '',
-        year: parsed.year || ''
-      })
+      // Só adiciona se tiver título válido
+      if (parsed.title && parsed.title.trim() !== '') {
+        projects.push({
+          id: parsed.id,
+          title: parsed.title,
+          description: parsed.description || '',
+          videoUrl: parsed.youtube || '',
+          videoFile: parsed.videoFile || '',
+          role: parsed.role || '',
+          year: parsed.year || ''
+        })
+      }
     } catch (e) {
       // Em caso de erro de parsing, ignora arquivo
     }
@@ -783,6 +785,17 @@ function ProjectsPage({ isDarkMode }) {
     }
   }
 
+  // Detecta se é TikTok
+  const isTikTok = (url) => {
+    if (!url) return false
+    try {
+      const u = new URL(url)
+      return u.hostname.includes('tiktok.com')
+    } catch {
+      return false
+    }
+  }
+
   const [activeVideo, setActiveVideo] = useState(null) // { title, ytId, url }
 
   // Cores exclusivas para a página Projetos (mais distintas)
@@ -816,6 +829,7 @@ function ProjectsPage({ isDarkMode }) {
           {projects.map((project, index) => {
             const ytId = getYouTubeId(project.videoUrl)
             const hasYouTube = Boolean(ytId)
+            const hasTikTok = isTikTok(project.videoUrl)
             const thumbnail = hasYouTube ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : ''
 
             return (
@@ -837,10 +851,17 @@ function ProjectsPage({ isDarkMode }) {
                     }}
                     className="absolute inset-0 w-full h-full group"
                   >
-                    {/* Thumbnail do YouTube ou fallback */}
+                    {/* Thumbnail do YouTube, TikTok ou fallback */}
                     {hasYouTube ? (
                       <img
                         src={thumbnail}
+                        alt={project.title}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : hasTikTok && project.videoFile ? (
+                      <img
+                        src={project.videoFile}
                         alt={project.title}
                         className="w-full h-full object-cover"
                         loading="lazy"
@@ -909,7 +930,7 @@ function ProjectsPage({ isDarkMode }) {
                         rel="noreferrer"
                         className={`${neutralBtn} rounded-lg py-2 px-3 text-sm font-medium text-center transition-colors`}
                       >
-                        Abrir no YouTube
+                        {hasTikTok ? 'Abrir no TikTok' : 'Abrir no YouTube'}
                       </a>
                     </div>
                   )}

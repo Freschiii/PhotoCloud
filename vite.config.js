@@ -6,8 +6,8 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
   plugins: [react(),tailwindcss()],
-  // Base dinâmica: Vercel/Preview usa '/', GitHub Pages usa '/PhotoCloud/'
-  base: process.env.VERCEL ? '/' : '/PhotoCloud/',
+  // Para Vercel usar base '/'
+  base: '/',
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
     historyApiFallback: true,
   },
   build: {
-    // Publicar em docs/ para usar GitHub Pages (main/docs)
-    outDir: 'docs',
+    // Para Vercel usar dist/ (padrão)
+    outDir: 'dist',
     chunkSizeWarningLimit: 1500,
     rollupOptions: {
       output: {
