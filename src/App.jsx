@@ -566,8 +566,6 @@ function GalleryPage({ isDarkMode, selectedImage }) {
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedImageForLightbox, setSelectedImageForLightbox] = useState(null)
   const [slideDirection, setSlideDirection] = useState(0) // 0: initial, 1: right, -1: left
-  const [lightboxScale, setLightboxScale] = useState(1)
-  const [lightboxPosition, setLightboxPosition] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const imagesPerPage = 12 // Número de imagens por página (aumentado de 9 para 12)
@@ -616,8 +614,6 @@ function GalleryPage({ isDarkMode, selectedImage }) {
   // Função para abrir lightbox
   const openLightbox = (image) => {
     setSelectedImageForLightbox(image)
-    setLightboxScale(1)
-    setLightboxPosition({ x: 0, y: 0 })
     // Bloquear scroll do body
     document.body.style.overflow = 'hidden'
   }
@@ -625,8 +621,6 @@ function GalleryPage({ isDarkMode, selectedImage }) {
   // Função para fechar o lightbox e limpar o estado
   const closeLightbox = () => {
     setSelectedImageForLightbox(null)
-    setLightboxScale(1)
-    setLightboxPosition({ x: 0, y: 0 })
     // Restaurar scroll do body
     document.body.style.overflow = 'auto'
   }
@@ -642,14 +636,6 @@ function GalleryPage({ isDarkMode, selectedImage }) {
     if (newIndex >= galleryImages.length) newIndex = 0
     
     setSelectedImageForLightbox(galleryImages[newIndex])
-    setLightboxScale(1)
-    setLightboxPosition({ x: 0, y: 0 })
-  }
-
-  // Função para resetar zoom e posição
-  const resetLightbox = () => {
-    setLightboxScale(1)
-    setLightboxPosition({ x: 0, y: 0 })
   }
 
   return (
@@ -777,17 +763,21 @@ function GalleryPage({ isDarkMode, selectedImage }) {
               className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
               onClick={closeLightbox}
               onTouchStart={(e) => {
+                e.preventDefault()
                 if (e.touches.length === 1) {
                   setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY })
                   setIsDragging(true)
                 }
               }}
               onTouchMove={(e) => {
+                e.preventDefault()
                 if (e.touches.length === 1 && isDragging) {
+                  // Prevenir scroll durante o toque
                   e.preventDefault()
                 }
               }}
               onTouchEnd={(e) => {
+                e.preventDefault()
                 if (e.touches.length === 0 && isDragging) {
                   const touch = e.changedTouches[0]
                   const deltaX = touch.clientX - dragStart.x
@@ -805,60 +795,23 @@ function GalleryPage({ isDarkMode, selectedImage }) {
                   setIsDragging(false)
                 }
               }}
+              style={{ touchAction: 'none' }}
             >
               <motion.img
                 initial={{ scale: 0.8 }}
-                animate={{ 
-                  scale: lightboxScale,
-                  x: lightboxPosition.x,
-                  y: lightboxPosition.y
-                }}
+                animate={{ scale: 1 }}
                 exit={{ scale: 0.8 }}
                 src={selectedImageForLightbox.src}
                 alt={selectedImageForLightbox.alt}
-                className="max-w-[95vw] max-h-[95vh] w-auto h-auto object-contain cursor-grab active:cursor-grabbing"
+                className="max-w-[95vw] max-h-[95vh] w-auto h-auto object-contain"
                 style={{ 
                   imageRendering: '-webkit-optimize-contrast',
-                  transform: `scale(${lightboxScale}) translate(${lightboxPosition.x}px, ${lightboxPosition.y}px)`
+                  touchAction: 'none'
                 }}
                 onClick={(e) => e.stopPropagation()}
-                onTouchStart={(e) => {
-                  if (e.touches.length === 2) {
-                    // Gesto de pinça para zoom
-                    e.preventDefault()
-                    const touch1 = e.touches[0]
-                    const touch2 = e.touches[1]
-                    const distance = Math.sqrt(
-                      Math.pow(touch2.clientX - touch1.clientX, 2) + 
-                      Math.pow(touch2.clientY - touch1.clientY, 2)
-                    )
-                    setDragStart({ distance, scale: lightboxScale })
-                  }
-                }}
-                onTouchMove={(e) => {
-                  if (e.touches.length === 2) {
-                    // Continuar zoom com pinça
-                    e.preventDefault()
-                    const touch1 = e.touches[0]
-                    const touch2 = e.touches[1]
-                    const distance = Math.sqrt(
-                      Math.pow(touch2.clientX - touch1.clientX, 2) + 
-                      Math.pow(touch2.clientY - touch1.clientY, 2)
-                    )
-                    
-                    if (dragStart.distance) {
-                      const scale = Math.max(0.5, Math.min(3, dragStart.scale * (distance / dragStart.distance)))
-                      setLightboxScale(scale)
-                    }
-                  }
-                }}
-                onTouchEnd={(e) => {
-                  if (e.touches.length === 1) {
-                    // Reset do estado de zoom
-                    setDragStart({ x: 0, y: 0 })
-                  }
-                }}
-                onDoubleClick={resetLightbox}
+                onTouchStart={(e) => e.preventDefault()}
+                onTouchMove={(e) => e.preventDefault()}
+                onTouchEnd={(e) => e.preventDefault()}
               />
               
               {/* Botões de navegação */}
@@ -891,19 +844,6 @@ function GalleryPage({ isDarkMode, selectedImage }) {
                 className="absolute top-4 right-4 text-white hover:text-gray-300 bg-black/50 rounded-full p-2 transition-colors duration-200"
               >
                 <X className="h-8 w-8" />
-              </button>
-              
-              {/* Botão de reset zoom */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  resetLightbox()
-                }}
-                className="absolute top-4 left-4 text-white hover:text-gray-300 bg-black/50 rounded-full p-2 transition-colors duration-200"
-              >
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
               </button>
             </motion.div>
           )}
