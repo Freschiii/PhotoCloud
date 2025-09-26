@@ -881,88 +881,141 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
           <div ref={galleryTopRef} className="h-0" />
         )}
 
-        {/* Botão Flutuante de Download - Aparece quando há imagens selecionadas */}
+        {/* Botões Flutuantes - Aparecem quando há imagens selecionadas */}
         {isSelectMode && selectedImages.size > 0 && (
-          <motion.div
-            initial={{ 
-              scale: 0, 
-              opacity: 0,
-              y: 50
-            }}
-            animate={{ 
-              scale: 1, 
-              opacity: 1,
-              y: 0
-            }}
-            exit={{ 
-              scale: 0, 
-              opacity: 0,
-              y: 50
-            }}
-            transition={{
-              type: "spring",
-              stiffness: 400,
-              damping: 30,
-              duration: 0.4
-            }}
-            className="fixed bottom-6 right-1/2 transform translate-x-1/2 md:right-[23%] md:transform-none md:translate-x-0 z-40"
-          >
+          <>
+            {/* Botão de Cancelar - Lado Esquerdo */}
             <motion.div
-              whileHover={{ 
-                scale: 1.02,
-                y: -2
+              initial={{ 
+                scale: 0, 
+                opacity: 0,
+                y: 50
               }}
-              whileTap={{ 
-                scale: 0.98,
+              animate={{ 
+                scale: 1, 
+                opacity: 1,
                 y: 0
+              }}
+              exit={{ 
+                scale: 0, 
+                opacity: 0,
+                y: 50
               }}
               transition={{
                 type: "spring",
                 stiffness: 400,
-                damping: 25
+                damping: 30,
+                duration: 0.4
               }}
+              className="fixed bottom-6 left-1/2 transform -translate-x-1/2 md:left-[23%] md:transform-none md:translate-x-0 z-40"
             >
-              <Button
-                onClick={handleDownloadSelected}
-                disabled={isDownloading}
-                className="bg-green-600 hover:bg-green-700 text-white shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-full px-8 py-4 flex items-center justify-center group relative overflow-hidden min-w-[240px] text-base border-2 border-white/20 hover:border-white/40"
+              <motion.div
+                whileHover={{ 
+                  scale: 1.02,
+                  y: -2
+                }}
+                whileTap={{ 
+                  scale: 0.98,
+                  y: 0
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 400,
+                  damping: 25
+                }}
               >
-                <motion.div
-                  animate={{ 
-                    rotate: isDownloading ? 360 : 0 
-                  }}
-                  transition={{ 
-                    duration: 1, 
-                    repeat: isDownloading ? Infinity : 0,
-                    ease: "linear"
-                  }}
-                  className="mr-2"
+                <Button
+                  onClick={toggleSelectMode}
+                  className="bg-red-600 hover:bg-red-700 text-white shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-full px-8 py-4 flex items-center justify-center group relative overflow-hidden min-w-[200px] text-base border-2 border-white/20 hover:border-white/40"
                 >
-                  <Download className="h-5 w-5" />
-                </motion.div>
-                
-                <span className="font-medium text-sm">
-                  {isDownloading ? 'Baixando...' : `Baixar ${selectedImages.size} foto${selectedImages.size > 1 ? 's' : ''}`}
-                </span>
-                
-                {/* Efeito de pulso quando está baixando */}
-                {isDownloading && (
+                  <X className="h-5 w-5 mr-2" />
+                  <span className="font-medium text-sm">Cancelar</span>
+                </Button>
+              </motion.div>
+            </motion.div>
+
+            {/* Botão de Download - Lado Direito */}
+            <motion.div
+              initial={{ 
+                scale: 0, 
+                opacity: 0,
+                y: 50
+              }}
+              animate={{ 
+                scale: 1, 
+                opacity: 1,
+                y: 0
+              }}
+              exit={{ 
+                scale: 0, 
+                opacity: 0,
+                y: 50
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 400,
+                damping: 30,
+                duration: 0.4
+              }}
+              className="fixed bottom-6 right-1/2 transform translate-x-1/2 md:right-[23%] md:transform-none md:translate-x-0 z-40"
+            >
+              <motion.div
+                whileHover={{ 
+                  scale: 1.02,
+                  y: -2
+                }}
+                whileTap={{ 
+                  scale: 0.98,
+                  y: 0
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 400,
+                  damping: 25
+                }}
+              >
+                <Button
+                  onClick={handleDownloadSelected}
+                  disabled={isDownloading}
+                  className="bg-green-600 hover:bg-green-700 text-white shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-full px-8 py-4 flex items-center justify-center group relative overflow-hidden min-w-[240px] text-base border-2 border-white/20 hover:border-white/40"
+                >
                   <motion.div
-                    className="absolute inset-0 bg-green-400 rounded-full"
                     animate={{ 
-                      scale: [1, 1.1, 1],
-                      opacity: [0.3, 0, 0.3]
+                      rotate: isDownloading ? 360 : 0 
                     }}
                     transition={{ 
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: "easeInOut"
+                      duration: 1, 
+                      repeat: isDownloading ? Infinity : 0,
+                      ease: "linear"
                     }}
-                  />
-                )}
-              </Button>
+                    className="mr-2"
+                  >
+                    <Download className="h-5 w-5" />
+                  </motion.div>
+                  
+                  <span className="font-medium text-sm">
+                    {isDownloading ? 'Baixando...' : `Baixar ${selectedImages.size} foto${selectedImages.size > 1 ? 's' : ''}`}
+                  </span>
+                  
+                  {/* Efeito de pulso quando está baixando */}
+                  {isDownloading && (
+                    <motion.div
+                      className="absolute inset-0 bg-green-400 rounded-full"
+                      animate={{ 
+                        scale: [1, 1.1, 1],
+                        opacity: [0.3, 0, 0.3]
+                      }}
+                      transition={{ 
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    />
+                  )}
+                </Button>
+              </motion.div>
             </motion.div>
-          </motion.div>
+          </>
         )}
         
 
