@@ -278,8 +278,8 @@ function Navigation({ isDarkMode, toggleDarkMode }) {
               onClick={() => handlePageChange('clientes')}
               className={`font-medium transition-colors duration-200 ${
                 currentPage === 'clientes'
-                  ? `${isDarkMode ? 'text-amber-400' : 'text-amber-600'} font-semibold`
-                  : `${isDarkMode ? 'text-amber-300 hover:text-amber-200' : 'text-amber-500 hover:text-amber-600'} text-sm`
+                  ? `${isDarkMode ? 'text-blue-400' : 'text-blue-600'} font-semibold`
+                  : `${isDarkMode ? 'text-blue-300 hover:text-blue-200' : 'text-blue-500 hover:text-blue-600'} text-sm`
               }`}
             >
               Área do Cliente
