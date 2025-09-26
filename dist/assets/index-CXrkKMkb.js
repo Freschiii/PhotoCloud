@@ -85,7 +85,7 @@ Ano: 2025\r
 Função: Produtor / Editor / Social\r
 Descrição: Perfil oficial da produtora The Friday Night Club no TikTok, com vários vídeos curtos de projetos, bastidores e edições. \r
 TikTok: https://www.tiktok.com/@thefridaynigtclub\r
-VideoFile: friday-night-club/Friday-BG.jpg\r
+VideoFile: ./friday-night-club/Friday-BG.jpg\r
 \r
 \r
 `;/**
