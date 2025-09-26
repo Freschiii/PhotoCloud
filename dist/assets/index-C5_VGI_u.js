@@ -81,7 +81,7 @@ O programa é um trabalho transmídia, onde buscamos falar um pouco sobre a pers
 YouTube: https://www.youtube.com/watch?v=8DoIhbZ5jt8
 VideoFile: A VOZ PODCAST NARRATIVO.mp4
 `,ax=`Título: The Friday Night Club (TikTok)\r
-Ano: 2025\r
+Ano:\r
 Função: Produtor / Editor / Social\r
 Descrição: Perfil oficial da produtora The Friday Night Club no TikTok, com vários vídeos curtos de projetos, bastidores e edições. \r
 TikTok: https://www.tiktok.com/@thefridaynigtclub\r
