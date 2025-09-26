@@ -846,6 +846,7 @@ function ProjectsPage({ isDarkMode }) {
                     type="button"
                     onClick={() => {
                       if (hasYouTube) setActiveVideo({ title: project.title, ytId, url: project.videoUrl })
+                      else if (hasTikTok && project.videoUrl) window.open(project.videoUrl, '_blank')
                       else if (project.videoFile) window.open(project.videoFile, '_blank')
                       else if (project.videoUrl) window.open(project.videoUrl, '_blank')
                     }}
@@ -859,7 +860,7 @@ function ProjectsPage({ isDarkMode }) {
                         className="w-full h-full object-cover"
                         loading="lazy"
                       />
-                    ) : hasTikTok && project.videoFile ? (
+                    ) : project.videoFile ? (
                       <img
                         src={project.videoFile}
                         alt={project.title}
