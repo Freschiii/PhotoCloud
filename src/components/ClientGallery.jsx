@@ -884,7 +884,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
         {/* Botões Flutuantes - Aparecem quando há imagens selecionadas */}
         {isSelectMode && selectedImages.size > 0 && (
           <>
-            {/* Botão de Cancelar - Lado Esquerdo */}
+            {/* Botão de Cancelar - Embaixo */}
             <motion.div
               initial={{ 
                 scale: 0, 
@@ -907,7 +907,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
                 damping: 30,
                 duration: 0.4
               }}
-              className="fixed bottom-6 left-4 md:left-[23%] z-40"
+              className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40"
             >
               <motion.div
                 whileHover={{ 
@@ -934,7 +934,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
               </motion.div>
             </motion.div>
 
-            {/* Botão de Download - Lado Direito */}
+            {/* Botão de Download - Em cima */}
             <motion.div
               initial={{ 
                 scale: 0, 
@@ -957,7 +957,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
                 damping: 30,
                 duration: 0.4
               }}
-              className="fixed bottom-6 right-4 md:right-[23%] z-40"
+              className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-40"
             >
               <motion.div
                 whileHover={{ 
