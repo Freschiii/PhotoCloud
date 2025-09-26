@@ -272,17 +272,17 @@ function Navigation({ isDarkMode, toggleDarkMode }) {
     }`} style={isDarkMode ? { backgroundColor: 'rgba(7, 9, 13, 0.9)' } : {}}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 relative">
-          {/* Left group: Projetos */}
+          {/* Left group: Área do Cliente */}
           <div className="hidden md:flex items-center space-x-6">
             <button
-              onClick={() => handlePageChange('projetos')}
+              onClick={() => handlePageChange('clientes')}
               className={`font-medium transition-colors duration-200 ${
-                currentPage === 'projetos'
-                  ? `${isDarkMode ? 'text-indigo-300' : 'text-indigo-700'} font-semibold`
-                  : `${isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-800'} text-sm`
+                currentPage === 'clientes'
+                  ? `${isDarkMode ? 'text-amber-400' : 'text-amber-600'} font-semibold`
+                  : `${isDarkMode ? 'text-amber-300 hover:text-amber-200' : 'text-amber-500 hover:text-amber-600'} text-sm`
               }`}
             >
-              projetos
+              Área do Cliente
             </button>
           </div>
 
@@ -297,9 +297,9 @@ function Navigation({ isDarkMode, toggleDarkMode }) {
             </button>
           </div>
 
-          {/* Right group: home/galeria/clientes/contato + dark toggle (desktop) */}
+          {/* Right group: home/galeria/projetos/contato + dark toggle (desktop) */}
           <div className="hidden md:flex items-center space-x-8">
-            {['home', 'galeria', 'clientes', 'contato', 'curriculo'].map((page) => (
+            {['home', 'galeria', 'projetos', 'contato', 'curriculo'].map((page) => (
               <button
                 key={page}
                 onClick={() => handlePageChange(page)}
@@ -309,7 +309,7 @@ function Navigation({ isDarkMode, toggleDarkMode }) {
                     : `${isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-800'}`
                 }`}
               >
-                {page === 'curriculo' ? 'currículo' : (page === 'clientes' ? 'Área do Cliente' : page)}
+                {page === 'curriculo' ? 'currículo' : page}
               </button>
             ))}
             
