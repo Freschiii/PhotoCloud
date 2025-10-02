@@ -7,6 +7,7 @@ import ClientGallery from './components/ClientGallery.jsx'
 import Resume from './components/Resume.jsx'
 import ClientList from './components/ClientList.jsx'
 import AdminPanel from './components/AdminPanel.jsx'
+import { getClientById } from './lib/clientsManifest.js'
 import './App.css'
 
 // Componente para controlar a rolagem da página
@@ -207,9 +208,14 @@ function ClientGalleryWrapper({ isDarkMode }) {
   const { clientId } = useParams()
   const navigate = useNavigate()
   
+  // Busca as informações do cliente pelo ID
+  const clientInfo = getClientById(clientId)
+  const displayName = clientInfo ? clientInfo.name : clientId
+  
   return (
     <ClientGallery 
       clientName={clientId} 
+      displayName={displayName}
       isDarkMode={isDarkMode} 
       onBack={() => navigate('/clientes')} 
     />

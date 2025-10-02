@@ -276,7 +276,7 @@ async function downloadAllImages(images, clientName, onProgress) {
   }
 }
 
-function ClientGallery({ clientName, isDarkMode, onBack }) {
+function ClientGallery({ clientName, displayName, isDarkMode, onBack }) {
   const navigate = useNavigate()
   
   // Verifica se é admin ANTES de tudo
@@ -740,7 +740,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center py-20">
             <h1 className={`font-serif text-4xl md:text-5xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              {formatClientName(clientName)}
+              {displayName || formatClientName(clientName)}
             </h1>
             <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               Nenhuma foto encontrada para este cliente.
@@ -773,7 +773,7 @@ function ClientGallery({ clientName, isDarkMode, onBack }) {
             </div>
           )}
           <h1 className={`font-serif text-4xl md:text-5xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-            {formatClientName(clientName)}
+            {displayName || formatClientName(clientName)}
           </h1>
           
           
