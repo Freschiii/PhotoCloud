@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Folder, Upload, Eye, Settings, LogOut, Copy, Check } from 'lucide-react'
+import { Folder, Upload, Eye, Settings, LogOut, Copy, Check, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button.jsx'
 import AdminLogin from './AdminLogin.jsx'
 import { getAllClients } from '@/lib/clientsManifest.js'
@@ -33,6 +33,7 @@ export default function AdminPanel({ isDarkMode = true }) {
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
   const [copiedCode, setCopiedCode] = useState(null)
+  const [sharedClient, setSharedClient] = useState(null)
 
   useEffect(() => {
     // Verifica se já está autenticado
@@ -84,6 +85,26 @@ export default function AdminPanel({ isDarkMode = true }) {
       setTimeout(() => setCopiedCode(null), 2000)
     } catch (err) {
       console.error('Erro ao copiar código:', err)
+    }
+  }
+
+  const shareClient = async (client) => {
+    try {
+      const baseUrl = window.location.origin
+      const clientUrl = `${baseUrl}/#/cliente/${client.id}`
+      
+      const shareText = `📸 Seu álbum de fotos está pronto!
+
+🔗 Link: ${clientUrl}
+🔑 Código: ${client.id}
+
+Acesse o link acima e use o código para visualizar suas fotos!`
+
+      await navigator.clipboard.writeText(shareText)
+      setSharedClient(client.id)
+      setTimeout(() => setSharedClient(null), 3000)
+    } catch (err) {
+      console.error('Erro ao compartilhar:', err)
     }
   }
 
@@ -287,6 +308,23 @@ export default function AdminPanel({ isDarkMode = true }) {
                       >
                         <Eye className="w-4 h-4 mr-2" />
                         Ver Galeria
+                      </Button>
+                      
+                      <Button
+                        onClick={() => shareClient(client)}
+                        className={`${sharedClient === client.id 
+                          ? 'bg-gradient-to-r from-green-600 to-green-700 text-white' 
+                          : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white'
+                        } shadow-lg hover:shadow-xl transition-all duration-300`}
+                        size="sm"
+                        title="Compartilhar link e código com o cliente"
+                      >
+                        {sharedClient === client.id ? (
+                          <Check className="w-4 h-4 mr-2" />
+                        ) : (
+                          <Share2 className="w-4 h-4 mr-2" />
+                        )}
+                        {sharedClient === client.id ? 'Copiado!' : 'Compartilhar'}
                       </Button>
                   </motion.div>
                 </div>
