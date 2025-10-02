@@ -317,14 +317,13 @@ Acesse o link acima e use o código para visualizar suas fotos!`
                           : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white'
                         } shadow-lg hover:shadow-xl transition-all duration-300`}
                         size="sm"
-                        title="Compartilhar link e código com o cliente"
+                        title={sharedClient === client.id ? 'Copiado!' : 'Compartilhar link e código com o cliente'}
                       >
                         {sharedClient === client.id ? (
-                          <Check className="w-4 h-4 mr-2" />
+                          <Check className="w-4 h-4" />
                         ) : (
-                          <Share2 className="w-4 h-4 mr-2" />
+                          <Share2 className="w-4 h-4" />
                         )}
-                        {sharedClient === client.id ? 'Copiado!' : 'Compartilhar'}
                       </Button>
                   </motion.div>
                 </div>
