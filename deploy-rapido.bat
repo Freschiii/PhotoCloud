@@ -4,6 +4,13 @@ echo    DEPLOY RAPIDO - NOVO CLIENTE
 echo ========================================
 echo.
 
+echo Verificando estrutura...
+if not exist "src\assets\clientes" (
+    echo ERRO: Pasta src\assets\clientes nao encontrada!
+    pause
+    exit /b 1
+)
+
 echo Adicionando arquivos...
 git add .
 
