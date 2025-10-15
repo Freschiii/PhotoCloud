@@ -2,8 +2,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const root = path.resolve(process.cwd())
-const clientesDir = path.join(root, 'public', 'clientes')
-const manifestPath = path.join(clientesDir, 'manifest.json')
+const clientesDir = path.join(root, 'src', 'assets', 'clientes')
+const manifestPath = path.join(root, 'public', 'clientes', 'manifest.json')
 
 function safeRead(filePath) {
   try { return fs.readFileSync(filePath, 'utf8') } catch { return null }
