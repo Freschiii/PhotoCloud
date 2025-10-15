@@ -1,58 +1,67 @@
 @echo off
-echo ========================================
-echo    DEPLOY AUTOMATICO - NOVO CLIENTE
-echo ========================================
-echo.
+:: ==============================================
+:: Script de Deploy Automático para o GitHub
+:: ==============================================
 
-echo [1/5] Verificando estrutura de pastas...
-if not exist "src\assets\clientes" (
-    echo ERRO: Pasta src\assets\clientes nao encontrada!
-    echo Certifique-se de estar na pasta raiz do projeto.
-    pause
-    exit /b 1
+:: Caminho do projeto
+set "REPO_DIR=C:\Users\titan\Documents\site-album-teste"
+
+:: Muda para o diretório do repositório
+cd /d "%REPO_DIR%"
+
+:: Gera data e hora formatadas (sem caracteres inválidos)
+for /f "tokens=1-4 delims=/ " %%a in ("%date%") do (
+    set "dia=%%a"
+    set "mes=%%b"
+    set "ano=%%c"
+)
+for /f "tokens=1-2 delims=: " %%a in ("%time%") do (
+    set "hora=%%a"
+    set "minuto=%%b"
 )
 
-echo [2/5] Adicionando arquivos ao Git...
+:: Ajuste caso o formato de data do Windows seja diferente
+if "%ano%"=="" (
+    for /f "tokens=2-4 delims=/ " %%a in ("%date%") do (
+        set "dia=%%a"
+        set "mes=%%b"
+        set "ano=%%c"
+    )
+)
+
+:: Mensagem de commit automática
+set "COMMIT_MSG=Novo cliente %dia%/%mes%/%ano% %hora%:%minuto%"
+
+echo ==============================================
+echo Verificando alterações...
+echo ==============================================
+git status
+
+echo ==============================================
+echo Adicionando novos arquivos...
+echo ==============================================
 git add .
-if %errorlevel% neq 0 (
-    echo ERRO: Falha ao adicionar arquivos ao Git
+
+:: Verifica se há mudanças antes de commitar
+for /f %%i in ('git diff --cached --name-only') do set CHANGES=1
+if not defined CHANGES (
+    echo Nenhuma alteração encontrada. Nada para enviar.
     pause
-    exit /b 1
+    exit /b
 )
 
-echo [3/5] Fazendo commit das mudanças...
-git commit -m "Add: Novo cliente adicionado - %date% %time%"
-if %errorlevel% neq 0 (
-    echo ERRO: Falha ao fazer commit
-    pause
-    exit /b 1
-)
+echo ==============================================
+echo Fazendo commit com mensagem:
+echo "%COMMIT_MSG%"
+echo ==============================================
+git commit -m "%COMMIT_MSG%"
 
-echo [4/5] Fazendo build do projeto...
-npm run build
-if %errorlevel% neq 0 (
-    echo ERRO: Falha no build do projeto
-    pause
-    exit /b 1
-)
-
-echo [5/5] Enviando para o GitHub...
+echo ==============================================
+echo Enviando para o GitHub...
+echo ==============================================
 git push origin main
-if %errorlevel% neq 0 (
-    echo ERRO: Falha ao enviar para o GitHub
-    pause
-    exit /b 1
-)
 
-echo.
-echo ========================================
-echo    DEPLOY CONCLUIDO COM SUCESSO!
-echo ========================================
-echo.
-echo O novo cliente foi adicionado e o site foi atualizado!
-echo Aguarde alguns minutos para o Vercel fazer o deploy automatico.
-echo.
-echo IMPORTANTE: Certifique-se de que as fotos estao em:
-echo src\assets\clientes\[nome-do-cliente]\
-echo.
+echo ==============================================
+echo Deploy concluído com sucesso!
+echo ==============================================
 pause
