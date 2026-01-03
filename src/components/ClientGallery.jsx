@@ -6,10 +6,55 @@ import { Button } from '@/components/ui/button.jsx'
 import JSZip from 'jszip'
 import TermsModal from './TermsModal'
 
+// Função para otimizar imagem reduzindo qualidade para 1/4
+async function optimizeImage(imageSrc) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    
+    img.onload = () => {
+      try {
+        // Reduz resolução para 50% (resulta em 1/4 da área)
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        
+        canvas.width = Math.floor(img.width * 0.5)
+        canvas.height = Math.floor(img.height * 0.5)
+        
+        // Desenha a imagem redimensionada no canvas
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        
+        // Converte para blob com qualidade reduzida (0.6 = 60% de qualidade)
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const optimizedUrl = URL.createObjectURL(blob)
+              resolve(optimizedUrl)
+            } else {
+              reject(new Error('Falha ao criar blob'))
+            }
+          },
+          'image/jpeg',
+          0.5 // Qualidade de 60% (reduzida de ~100% padrão)
+        )
+      } catch (error) {
+        reject(error)
+      }
+    }
+    
+    img.onerror = () => {
+      reject(new Error('Erro ao carregar imagem'))
+    }
+    
+    img.src = imageSrc
+  })
+}
+
 // Componente de imagem otimizado
 const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMode, onDownloadSingle, index }) => {
   const [imageError, setImageError] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
+  const [optimizedSrc, setOptimizedSrc] = useState(null)
+  const [isOptimizing, setIsOptimizing] = useState(true)
   
   const handleImageClick = useCallback(() => {
     onImageClick(image)
@@ -20,6 +65,49 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
     onDownloadSingle(image)
   }, [onDownloadSingle, image])
   
+  // Otimiza a imagem quando o componente monta
+  useEffect(() => {
+    let isMounted = true
+    let currentOptimizedSrc = null
+    
+    optimizeImage(image.src)
+      .then((url) => {
+        if (isMounted) {
+          currentOptimizedSrc = url
+          setOptimizedSrc(url)
+          setIsOptimizing(false)
+        } else {
+          // Se o componente já desmontou, limpa o blob
+          URL.revokeObjectURL(url)
+        }
+      })
+      .catch((error) => {
+        console.error('Erro ao otimizar imagem:', error)
+        if (isMounted) {
+          setOptimizedSrc(image.src) // Fallback para imagem original
+          setIsOptimizing(false)
+        }
+      })
+    
+    return () => {
+      isMounted = false
+      if (currentOptimizedSrc && currentOptimizedSrc.startsWith('blob:')) {
+        URL.revokeObjectURL(currentOptimizedSrc)
+      }
+    }
+  }, [image.src])
+  
+  // Cleanup do blob URL quando o componente desmonta ou src muda
+  useEffect(() => {
+    return () => {
+      if (optimizedSrc && optimizedSrc.startsWith('blob:')) {
+        URL.revokeObjectURL(optimizedSrc)
+      }
+    }
+  }, [optimizedSrc])
+  
+  const displaySrc = optimizedSrc || image.src
+  
   return (
     <div
       className={`relative group cursor-pointer overflow-hidden rounded-lg shadow-lg ${
@@ -29,13 +117,13 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
     >
       {!imageError ? (
         <>
-          {!imageLoaded && (
+          {(!imageLoaded || isOptimizing) && (
             <div className="w-full aspect-[4/3] bg-gray-300 animate-pulse rounded-lg flex items-center justify-center">
               <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
             </div>
           )}
           <img
-            src={image.src}
+            src={displaySrc}
             alt={image.name}
             className={`w-full aspect-[4/3] object-cover transition-all duration-300 group-hover:scale-105 rounded-lg ${imageLoaded ? 'opacity-100' : 'opacity-0 absolute'}`}
             loading="lazy"
@@ -47,8 +135,7 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
               setImageError(true)
             }}
             style={{
-              imageRendering: 'auto',
-              imageQuality: 'high'
+              imageRendering: 'auto'
             }}
           />
         </>
