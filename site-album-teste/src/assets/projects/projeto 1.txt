@@ -1,0 +1,9 @@
+﻿Título: A VOZ - PODCAST NARRATIVO
+Função: Editor de Áudio e Narrador
+Ano: 2025
+Descrição: 
+Projeto Acadêmico
+Um Podcast narrativo sobre consumismo e a sociedade atual
+
+YouTube: https://youtu.be/3vOnZUGOjeA
+VideoFile: A VOZ PODCAST NARRATIVO.mp4

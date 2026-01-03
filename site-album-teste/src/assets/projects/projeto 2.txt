@@ -1,0 +1,9 @@
+﻿Título: Entre começos e fins
+Função: Editor de Vídeo e Diretor de Fotografia
+Ano: 2025
+Descrição: 
+Projeto Acadêmico
+Um curta com o tema Relacionamentos
+
+YouTube: https://www.youtube.com/watch?v=03_3wWGvJoI
+VideoFile: A VOZ PODCAST NARRATIVO.mp4

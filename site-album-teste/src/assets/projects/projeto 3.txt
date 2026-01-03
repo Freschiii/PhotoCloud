@@ -1,0 +1,9 @@
+﻿Título: VIBRETTO - Playlist de Rádio
+Função: Editor de Áudio
+Ano: 2024
+Descrição: 
+Projeto Acadêmico
+O programa é um trabalho transmídia, onde buscamos falar um pouco sobre a personagem Thuga do livro Piteco-Ingá, por meio de uma Playlist de Rádio, com músicas que remetem a trechos da vida e das características da personagem.
+
+YouTube: https://www.youtube.com/watch?v=8DoIhbZ5jt8
+VideoFile: A VOZ PODCAST NARRATIVO.mp4
