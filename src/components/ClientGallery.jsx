@@ -328,7 +328,7 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
           
           {/* Blur para imagens que ainda não devem carregar - SEMPRE a própria imagem borrada */}
           {!shouldLoad && blurDataURL && (
-            <div 
+            <motion.div 
               className="absolute inset-0 rounded-lg"
               style={{
                 backgroundImage: `url(${blurDataURL})`,
@@ -348,8 +348,8 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
       )}
       
       {/* Overlay com controles */}
-      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-200">
-        {!isSelectMode && (
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-200" style={{ zIndex: 3 }}>
+        {!isSelectMode && imageLoaded && !showBlur && displaySrc && (
           <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <Button
               size="sm"
@@ -518,13 +518,18 @@ function downloadImage(imageSrc, imageName) {
 }
 
 // Função para baixar todas as imagens como ZIP
-async function downloadAllImages(images, clientName, onProgress) {
+async function downloadAllImages(images, clientName, onProgress, isCancelled) {
   try {
     if (images.length <= 5) {
       // Para 5 ou menos fotos, baixa individualmente
       for (let i = 0; i < images.length; i++) {
+        if (isCancelled?.()) {
+          throw new Error('Download cancelado')
+        }
         setTimeout(() => {
-          downloadImage(images[i].src, `${clientName}-${i + 1}`)
+          if (!isCancelled?.()) {
+            downloadImage(images[i].src, `${clientName}-${i + 1}`)
+          }
         }, i * 500) // Delay entre downloads para evitar bloqueio do navegador
       }
       return
@@ -535,21 +540,42 @@ async function downloadAllImages(images, clientName, onProgress) {
     const folder = zip.folder(clientName)
 
     for (let i = 0; i < images.length; i++) {
+      // Verifica se foi cancelado antes de processar cada imagem
+      if (isCancelled?.()) {
+        throw new Error('Download cancelado')
+      }
+      
       try {
         onProgress?.(i + 1, images.length)
         
         const response = await fetch(images[i].src)
+        if (isCancelled?.()) {
+          throw new Error('Download cancelado')
+        }
         const blob = await response.blob()
         const fileName = `${images[i].name}.jpg`
         folder.file(fileName, blob)
       } catch (error) {
+        if (error.message === 'Download cancelado') {
+          throw error
+        }
         console.error(`Erro ao processar imagem ${i + 1}:`, error)
       }
+    }
+
+    // Verifica se foi cancelado antes de gerar o ZIP
+    if (isCancelled?.()) {
+      throw new Error('Download cancelado')
     }
 
     // Gera o ZIP
     onProgress?.(images.length, images.length, 'Gerando ZIP...')
     const zipBlob = await zip.generateAsync({ type: 'blob' })
+    
+    // Verifica novamente antes de fazer o download
+    if (isCancelled?.()) {
+      throw new Error('Download cancelado')
+    }
     
     // Faz o download do ZIP
     const link = document.createElement('a')
@@ -561,7 +587,12 @@ async function downloadAllImages(images, clientName, onProgress) {
     URL.revokeObjectURL(link.href)
     
   } catch (error) {
+    if (error.message === 'Download cancelado') {
+      console.log('Download cancelado pelo usuário')
+      throw error
+    }
     console.error('Erro ao baixar imagens:', error)
+    throw error
   }
 }
 
@@ -590,6 +621,7 @@ function ClientGallery({ clientName, displayName, isDarkMode, onBack }) {
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0, status: '' })
   const [showDownloadPopup, setShowDownloadPopup] = useState(false)
+  const downloadCancelledRef = useRef(false)
   const [showTermsModal, setShowTermsModal] = useState(false)
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(isAdmin) // Inicia como true se for admin
   const [clientIdentification, setClientIdentification] = useState('')
@@ -802,7 +834,7 @@ function ClientGallery({ clientName, displayName, isDarkMode, onBack }) {
 
   // Funções de zoom
   const handleZoomIn = () => {
-    setZoomLevel(prev => Math.min(prev + 0.25, 2))
+    setZoomLevel(prev => Math.min(prev + 0.25, 5))
   }
 
   const handleZoomOut = () => {
@@ -890,7 +922,7 @@ function ClientGallery({ clientName, displayName, isDarkMode, onBack }) {
         const viewportHeight = window.innerHeight
         
         // Limite baseado no zoom - quanto mais zoom, mais pode arrastar
-        const zoomFactor = zoomLevel - 1 // 0 a 1 (100% a 200%)
+        const zoomFactor = zoomLevel - 1 // 0 a 4 (100% a 500%)
         const maxMoveX = (viewportWidth * 0.25) * zoomFactor // 25% da tela por nível de zoom
         const maxMoveY = (viewportHeight * 0.25) * zoomFactor
         
@@ -930,40 +962,75 @@ function ClientGallery({ clientName, displayName, isDarkMode, onBack }) {
     e.preventDefault()
     e.stopPropagation()
     const delta = e.deltaY > 0 ? -0.1 : 0.1
-    setZoomLevel(prev => Math.max(1, Math.min(2, prev + delta)))
+    setZoomLevel(prev => Math.max(1, Math.min(5, prev + delta)))
   }
 
+
+  const handleCancelDownload = useCallback(() => {
+    downloadCancelledRef.current = true
+    setIsDownloading(false)
+    setShowDownloadPopup(false)
+    setDownloadProgress({ current: 0, total: 0, status: '' })
+  }, [])
 
   const handleDownloadSelected = async () => {
     if (selectedImages.size === 0) return
     
+    downloadCancelledRef.current = false
     setIsDownloading(true)
     setShowDownloadPopup(true)
     setDownloadProgress({ current: 0, total: 0, status: 'Iniciando download...' })
     
     const selectedImagesList = images.filter(img => selectedImages.has(img.name))
     
-    await downloadAllImages(selectedImagesList, clientName, (current, total, status) => {
-      setDownloadProgress({ current, total, status: status || `Processando ${current} de ${total} fotos...` })
-    })
-    
-    setIsDownloading(false)
-    setShowDownloadPopup(false)
-    setSelectedImages(new Set())
-    setIsSelectMode(false)
+    try {
+      await downloadAllImages(selectedImagesList, clientName, (current, total, status) => {
+        if (!downloadCancelledRef.current) {
+          setDownloadProgress({ current, total, status: status || `Processando ${current} de ${total} fotos...` })
+        }
+      }, () => downloadCancelledRef.current)
+      
+      if (!downloadCancelledRef.current) {
+        setIsDownloading(false)
+        setShowDownloadPopup(false)
+        setSelectedImages(new Set())
+        setIsSelectMode(false)
+      }
+    } catch (error) {
+      if (error.message === 'Download cancelado') {
+        // Download foi cancelado, não faz nada
+        return
+      }
+      setIsDownloading(false)
+      setShowDownloadPopup(false)
+    }
   }
 
   const handleDownloadAll = async () => {
+    downloadCancelledRef.current = false
     setIsDownloading(true)
     setShowDownloadPopup(true)
     setDownloadProgress({ current: 0, total: 0, status: 'Iniciando download...' })
     
-    await downloadAllImages(images, clientName, (current, total, status) => {
-      setDownloadProgress({ current, total, status: status || `Processando ${current} de ${total} fotos...` })
-    })
-    
-    setIsDownloading(false)
-    setShowDownloadPopup(false)
+    try {
+      await downloadAllImages(images, clientName, (current, total, status) => {
+        if (!downloadCancelledRef.current) {
+          setDownloadProgress({ current, total, status: status || `Processando ${current} de ${total} fotos...` })
+        }
+      }, () => downloadCancelledRef.current)
+      
+      if (!downloadCancelledRef.current) {
+        setIsDownloading(false)
+        setShowDownloadPopup(false)
+      }
+    } catch (error) {
+      if (error.message === 'Download cancelado') {
+        // Download foi cancelado, não faz nada
+        return
+      }
+      setIsDownloading(false)
+      setShowDownloadPopup(false)
+    }
   }
 
   const handleAcceptTerms = (clientName) => {
@@ -1323,7 +1390,7 @@ function ClientGallery({ clientName, displayName, isDarkMode, onBack }) {
               <div className={`p-4 rounded-xl shadow-2xl max-w-sm ${
                 isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
               }`}>
-                <div className="flex items-center space-x-3">
+                <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0">
                     {images.length > 5 ? (
                       <FileArchive className={`h-6 w-6 ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`} />
@@ -1332,9 +1399,22 @@ function ClientGallery({ clientName, displayName, isDarkMode, onBack }) {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                      {images.length > 5 ? 'Criando arquivo ZIP...' : 'Baixando fotos...'}
-                    </p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {images.length > 5 ? 'Criando arquivo ZIP...' : 'Baixando fotos...'}
+                      </p>
+                      {isDownloading && (
+                        <Button
+                          onClick={handleCancelDownload}
+                          size="sm"
+                          variant="ghost"
+                          className={`h-6 px-2 text-xs ${isDarkMode ? 'text-red-400 hover:text-red-300 hover:bg-red-900/20' : 'text-red-600 hover:text-red-700 hover:bg-red-50'}`}
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Cancelar
+                        </Button>
+                      )}
+                    </div>
                     <p className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                       {downloadProgress.status}
                     </p>
