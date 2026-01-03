@@ -6,55 +6,146 @@ import { Button } from '@/components/ui/button.jsx'
 import JSZip from 'jszip'
 import TermsModal from './TermsModal'
 
-// Função para otimizar imagem reduzindo qualidade para 1/4
-async function optimizeImage(imageSrc) {
+// Sistema de fila para otimização de imagens com limite de concorrência
+class ImageOptimizationQueue {
+  constructor(maxConcurrent = 2) {
+    this.queue = []
+    this.processing = 0
+    this.maxConcurrent = maxConcurrent
+    this.cache = new Map()
+  }
+
+  async optimize(imageSrc, quality = 0.5) {
+    const cacheKey = `${imageSrc}_${quality}`
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey)
+    }
+
+    return new Promise((resolve, reject) => {
+      this.queue.push({ imageSrc, quality, resolve, reject, cacheKey })
+      this.processQueue()
+    })
+  }
+
+  async processQueue() {
+    if (this.processing >= this.maxConcurrent || this.queue.length === 0) {
+      return
+    }
+
+    this.processing++
+    const { imageSrc, quality, resolve, reject, cacheKey } = this.queue.shift()
+
+    try {
+      const optimizedUrl = await this.optimizeImage(imageSrc, quality)
+      this.cache.set(cacheKey, optimizedUrl)
+      resolve(optimizedUrl)
+    } catch (error) {
+      reject(error)
+    } finally {
+      this.processing--
+      this.processQueue()
+    }
+  }
+
+  async optimizeImage(imageSrc, quality) {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas')
+          const ctx = canvas.getContext('2d')
+          
+          // Reduz resolução para 50% (resulta em 1/4 da área)
+          canvas.width = Math.floor(img.width * 0.5)
+          canvas.height = Math.floor(img.height * 0.5)
+          
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+          
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const optimizedUrl = URL.createObjectURL(blob)
+                resolve(optimizedUrl)
+              } else {
+                reject(new Error('Falha ao criar blob'))
+              }
+            },
+            'image/jpeg',
+            quality
+          )
+        } catch (error) {
+          reject(error)
+        }
+      }
+      
+      img.onerror = () => reject(new Error('Erro ao carregar imagem'))
+      img.src = imageSrc
+    })
+  }
+}
+
+const optimizationQueue = new ImageOptimizationQueue(2) // Processa 2 imagens por vez
+
+// Gera um blur placeholder da própria imagem (similar ao Next.js Image)
+async function generateBlurDataURL(imageSrc) {
   return new Promise((resolve, reject) => {
     const img = new Image()
     
     img.onload = () => {
       try {
-        // Reduz resolução para 50% (resulta em 1/4 da área)
+        // Cria uma versão muito pequena da imagem (10px de largura)
         const canvas = document.createElement('canvas')
         const ctx = canvas.getContext('2d')
         
-        canvas.width = Math.floor(img.width * 0.5)
-        canvas.height = Math.floor(img.height * 0.5)
+        // Calcula altura proporcional mantendo aspect ratio
+        const aspectRatio = img.height / img.width
+        canvas.width = 10
+        canvas.height = Math.floor(10 * aspectRatio)
         
-        // Desenha a imagem redimensionada no canvas
+        // Desenha a imagem redimensionada
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
         
-        // Converte para blob com qualidade reduzida (0.6 = 60% de qualidade)
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              const optimizedUrl = URL.createObjectURL(blob)
-              resolve(optimizedUrl)
-            } else {
-              reject(new Error('Falha ao criar blob'))
-            }
-          },
-          'image/jpeg',
-          0.5 // Qualidade de 60% (reduzida de ~100% padrão)
-        )
+        // Converte para data URL (JPEG com baixa qualidade para ser pequeno)
+        const blurDataURL = canvas.toDataURL('image/jpeg', 0.2)
+        resolve(blurDataURL)
       } catch (error) {
+        // Em caso de erro, retorna null - não mostra nada até carregar
         reject(error)
       }
     }
     
     img.onerror = () => {
-      reject(new Error('Erro ao carregar imagem'))
+      // Em caso de erro, retorna null - não mostra nada até carregar
+      reject(new Error('Erro ao carregar imagem para blur'))
     }
     
     img.src = imageSrc
   })
 }
 
-// Componente de imagem otimizado
-const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMode, onDownloadSingle, index }) => {
+// Não usamos placeholder cinza - sempre usamos a própria imagem borrada
+
+// Componente de imagem otimizado similar ao Next.js Image
+const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMode, onDownloadSingle, index, width, height }) => {
   const [imageError, setImageError] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
   const [optimizedSrc, setOptimizedSrc] = useState(null)
-  const [isOptimizing, setIsOptimizing] = useState(true)
+  const [blurDataURL, setBlurDataURL] = useState(null)
+  const [shouldLoad, setShouldLoad] = useState(false)
+  const [showBlur, setShowBlur] = useState(true)
+  const imgRef = useRef(null)
+  const containerRef = useRef(null)
+  const observerRef = useRef(null)
+  const optimizedSrcRef = useRef(null)
+  
+  // Determina se a imagem está acima do fold (primeiras 6-9 imagens)
+  const isAboveFold = index < 9
+  const hasPriority = index < 6
+  
+  // Largura e altura padrão para evitar CLS (aspect ratio 4:3)
+  const imageWidth = width || 400
+  const imageHeight = height || 300
   
   const handleImageClick = useCallback(() => {
     onImageClick(image)
@@ -65,82 +156,193 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
     onDownloadSingle(image)
   }, [onDownloadSingle, image])
   
-  // Otimiza a imagem quando o componente monta
+  // Gera blur placeholder da própria imagem - SEMPRE da própria imagem
   useEffect(() => {
     let isMounted = true
-    let currentOptimizedSrc = null
     
-    optimizeImage(image.src)
+    // Enquanto o blurDataURL não estiver pronto, usa a imagem original (será borrada via CSS)
+    setBlurDataURL(image.src)
+    
+    // Gera o blur placeholder otimizado em background
+    generateBlurDataURL(image.src)
+      .then((blurURL) => {
+        if (isMounted) {
+          // Substitui pela versão otimizada (menor tamanho)
+          setBlurDataURL(blurURL)
+        }
+      })
+      .catch(() => {
+        // Se falhar, mantém a imagem original (que será borrada via CSS)
+        // Não usamos placeholder cinza - sempre a própria imagem
+      })
+    
+    return () => {
+      isMounted = false
+    }
+  }, [image.src])
+  
+  // IntersectionObserver para lazy loading
+  useEffect(() => {
+    // Se está acima do fold, carrega imediatamente
+    if (isAboveFold) {
+      setShouldLoad(true)
+      return
+    }
+    
+    // Para outras imagens, usa IntersectionObserver
+    if (typeof IntersectionObserver === 'undefined' || !containerRef.current) {
+      return
+    }
+    
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setShouldLoad(true)
+            if (observerRef.current) {
+              observerRef.current.disconnect()
+            }
+          }
+        })
+      },
+      { 
+        rootMargin: '100px', // Começa a carregar 100px antes de ficar visível
+        threshold: 0.01
+      }
+    )
+    
+    observerRef.current.observe(containerRef.current)
+    
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+      }
+    }
+  }, [isAboveFold])
+  
+  // Otimiza a imagem quando deve carregar
+  useEffect(() => {
+    if (!shouldLoad) {
+      return
+    }
+    
+    let isMounted = true
+    
+    // Todas as imagens são otimizadas antes de mostrar (qualidade reduzida para 1/4)
+    // A diferença é apenas no loading (eager para prioritárias, lazy para outras)
+    optimizationQueue.optimize(image.src, 0.5)
       .then((url) => {
         if (isMounted) {
-          currentOptimizedSrc = url
-          setOptimizedSrc(url)
-          setIsOptimizing(false)
+          optimizedSrcRef.current = url
+          setOptimizedSrc(url) // Sempre usa versão otimizada (qualidade reduzida)
         } else {
-          // Se o componente já desmontou, limpa o blob
           URL.revokeObjectURL(url)
         }
       })
       .catch((error) => {
-        console.error('Erro ao otimizar imagem:', error)
+        // Em caso de erro na otimização, usa a original como fallback
         if (isMounted) {
-          setOptimizedSrc(image.src) // Fallback para imagem original
-          setIsOptimizing(false)
+          setOptimizedSrc(image.src)
         }
       })
     
     return () => {
       isMounted = false
-      if (currentOptimizedSrc && currentOptimizedSrc.startsWith('blob:')) {
-        URL.revokeObjectURL(currentOptimizedSrc)
+      if (optimizedSrcRef.current && optimizedSrcRef.current.startsWith('blob:')) {
+        URL.revokeObjectURL(optimizedSrcRef.current)
       }
     }
-  }, [image.src])
+  }, [shouldLoad, image.src, hasPriority])
   
-  // Cleanup do blob URL quando o componente desmonta ou src muda
-  useEffect(() => {
-    return () => {
-      if (optimizedSrc && optimizedSrc.startsWith('blob:')) {
-        URL.revokeObjectURL(optimizedSrc)
-      }
-    }
-  }, [optimizedSrc])
-  
-  const displaySrc = optimizedSrc || image.src
+  // Sempre usa versão otimizada (qualidade reduzida) - não usa original como fallback
+  const displaySrc = optimizedSrc
   
   return (
     <div
+      ref={containerRef}
       className={`relative group cursor-pointer overflow-hidden rounded-lg shadow-lg ${
         isSelected ? 'ring-2 ring-blue-500' : ''
       }`}
       onClick={handleImageClick}
+      style={{ 
+        aspectRatio: '4/3',
+        width: '100%',
+        height: 'auto'
+      }}
     >
       {!imageError ? (
         <>
-          {(!imageLoaded || isOptimizing) && (
-            <div className="w-full aspect-[4/3] bg-gray-300 animate-pulse rounded-lg flex items-center justify-center">
-              <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-            </div>
+          {/* Blur placeholder da própria imagem - SEMPRE mostra a imagem borrada */}
+          {blurDataURL && showBlur && (
+            <div 
+              className="absolute inset-0 rounded-lg"
+              style={{
+                backgroundImage: `url(${blurDataURL})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                filter: 'blur(20px)',
+                transform: imageLoaded ? 'scale(1.1)' : 'scale(1)',
+                opacity: imageLoaded ? 0 : 1,
+                zIndex: 2,
+                pointerEvents: 'none',
+                transition: 'opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), filter 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
+              }}
+            />
           )}
-          <img
-            src={displaySrc}
-            alt={image.name}
-            className={`w-full aspect-[4/3] object-cover transition-all duration-300 group-hover:scale-105 rounded-lg ${imageLoaded ? 'opacity-100' : 'opacity-0 absolute'}`}
-            loading="lazy"
-            decoding="async"
-            fetchPriority={index < 6 ? "high" : "low"}
-            onLoad={() => setImageLoaded(true)}
-            onError={(e) => {
-              console.error(`Erro ao carregar imagem: ${image.name} - ${image.src}`, e)
-              setImageError(true)
-            }}
-            style={{
-              imageRendering: 'auto'
-            }}
-          />
+          
+          {/* Imagem otimizada (qualidade reduzida para 1/4) */}
+          {shouldLoad && displaySrc && (
+            <img
+              ref={imgRef}
+              src={displaySrc}
+              alt={image.name}
+              width={imageWidth}
+              height={imageHeight}
+              className="w-full h-full object-cover group-hover:scale-105 rounded-lg"
+              loading={hasPriority ? "eager" : "lazy"}
+              decoding="async"
+              fetchPriority={hasPriority ? "high" : "low"}
+              onLoad={() => {
+                setImageLoaded(true)
+                // Remove blur após transição suave completar
+                setTimeout(() => {
+                  setShowBlur(false)
+                }, 800)
+              }}
+              onError={(e) => {
+                console.error(`Erro ao carregar imagem: ${image.name}`, e)
+                setImageError(true)
+                setShowBlur(false)
+              }}
+              style={{
+                imageRendering: 'auto',
+                position: 'absolute',
+                inset: 0,
+                zIndex: 1,
+                opacity: imageLoaded ? 1 : 0,
+                transform: imageLoaded ? 'scale(1)' : 'scale(0.98)',
+                transition: 'opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
+              }}
+            />
+          )}
+          
+          {/* Blur para imagens que ainda não devem carregar - SEMPRE a própria imagem borrada */}
+          {!shouldLoad && blurDataURL && (
+            <div 
+              className="absolute inset-0 rounded-lg"
+              style={{
+                backgroundImage: `url(${blurDataURL})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                filter: 'blur(20px)',
+                transform: 'scale(1.1)',
+                zIndex: 1
+              }}
+            />
+          )}
         </>
       ) : (
-        <div className="w-full aspect-[4/3] bg-gray-200 flex items-center justify-center rounded-lg">
+        <div className="w-full h-full bg-gray-200 flex items-center justify-center rounded-lg">
           <Camera className="w-12 h-12 text-gray-400" />
         </div>
       )}
