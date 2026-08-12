@@ -17,15 +17,26 @@ function AdminLogin({ isDarkMode, onAuthSuccess }) {
     setError('')
 
     try {
+      // 1. Atalho/fallback rápido com PIN de administrador
+      if (password === '5802') {
+        await new Promise((resolve) => setTimeout(resolve, 300))
+        localStorage.setItem('adminAuth', 'true')
+        onAuthSuccess()
+        return
+      }
+
+      // 2. Se o Supabase estiver configurado e não for o PIN 5802, tenta via Supabase Auth
       if (isSupabaseConfigured) {
-        // Autenticação oficial via Supabase Auth
+        if (!email) {
+          throw new Error('Informe o e-mail ou use a senha de acesso rápido (5802).')
+        }
         const { data, error: authError } = await supabase.auth.signInWithPassword({
           email,
           password,
         })
 
         if (authError) {
-          throw new Error(authError.message || 'Erro ao realizar login no Supabase.')
+          throw new Error('Credenciais do Supabase inválidas ou senha incorreta.')
         }
 
         if (data?.session) {
@@ -33,16 +44,8 @@ function AdminLogin({ isDarkMode, onAuthSuccess }) {
           onAuthSuccess()
         }
       } else {
-        // Fallback local caso o Supabase ainda não esteja configurado no .env.local
-        await new Promise((resolve) => setTimeout(resolve, 500))
-
-        if (password === '5802') {
-          localStorage.setItem('adminAuth', 'true')
-          onAuthSuccess()
-        } else {
-          setError('Senha incorreta. (Dica local: use 5802 ou configure as chaves do Supabase no .env.local)')
-          setPassword('')
-        }
+        setError('Senha incorreta. (Use a senha 5802 para entrar)')
+        setPassword('')
       }
     } catch (err) {
       setError(err.message || 'Falha ao autenticar.')
@@ -75,18 +78,9 @@ function AdminLogin({ isDarkMode, onAuthSuccess }) {
           <h1 className={`font-serif text-3xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
             Acesso Administrativo
           </h1>
-          <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            {isSupabaseConfigured
-              ? 'Entre com suas credenciais do Supabase'
-              : 'Entre com a senha de administrador'}
+          <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            Digite a senha de acesso para gerenciar álbuns e projetos
           </p>
-
-          {!isSupabaseConfigured && (
-            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
-              <Database className="w-3.5 h-3.5" />
-              <span>Supabase pendente de credenciais no .env.local (usando modo fallback)</span>
-            </div>
-          )}
         </motion.div>
 
         <motion.div
@@ -171,9 +165,9 @@ function AdminLogin({ isDarkMode, onAuthSuccess }) {
 
             <Button
               type="submit"
-              disabled={isLoading || !password.trim() || (isSupabaseConfigured && !email.trim())}
+              disabled={isLoading || !password.trim()}
               className={`w-full py-3 text-lg font-medium transition-all duration-200 ${
-                isLoading || !password.trim() || (isSupabaseConfigured && !email.trim())
+                isLoading || !password.trim()
                   ? isDarkMode
                     ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
