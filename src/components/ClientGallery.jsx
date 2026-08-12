@@ -5,6 +5,7 @@ import { Download, DownloadCloud, X, ChevronLeft, ChevronRight, CheckCircle, Arr
 import { Button } from '@/components/ui/button.jsx'
 import JSZip from 'jszip'
 import TermsModal from './TermsModal'
+import { supabase, isSupabaseConfigured } from '../lib/supabase.js'
 
 // Sistema de fila para otimização de imagens com limite de concorrência
 class ImageOptimizationQueue {
@@ -163,6 +164,11 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
     // Enquanto o blurDataURL não estiver pronto, usa a imagem original (será borrada via CSS)
     setBlurDataURL(image.src)
     
+    // Para URLs externas do Supabase, não processa canvas para evitar congelamento
+    if (image.src && (image.src.startsWith('http://') || image.src.startsWith('https://'))) {
+      return
+    }
+
     // Gera o blur placeholder otimizado em background
     generateBlurDataURL(image.src)
       .then((blurURL) => {
@@ -173,7 +179,6 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
       })
       .catch(() => {
         // Se falhar, mantém a imagem original (que será borrada via CSS)
-        // Não usamos placeholder cinza - sempre a própria imagem
       })
     
     return () => {
@@ -225,22 +230,25 @@ const OptimizedImage = React.memo(({ image, isSelected, onImageClick, isSelectMo
     if (!shouldLoad) {
       return
     }
+
+    // Se for URL externa do Supabase Storage, usa diretamente com decodificação nativa para não travar
+    if (image.src && (image.src.startsWith('http://') || image.src.startsWith('https://'))) {
+      setOptimizedSrc(image.src)
+      return
+    }
     
     let isMounted = true
     
-    // Todas as imagens são otimizadas antes de mostrar (qualidade reduzida para 1/4)
-    // A diferença é apenas no loading (eager para prioritárias, lazy para outras)
     optimizationQueue.optimize(image.src, 0.5)
       .then((url) => {
         if (isMounted) {
           optimizedSrcRef.current = url
-          setOptimizedSrc(url) // Sempre usa versão otimizada (qualidade reduzida)
+          setOptimizedSrc(url)
         } else {
           URL.revokeObjectURL(url)
         }
       })
       .catch((error) => {
-        // Em caso de erro na otimização, usa a original como fallback
         if (isMounted) {
           setOptimizedSrc(image.src)
         }
@@ -614,6 +622,7 @@ function ClientGallery({ clientName, displayName, isDarkMode, onBack }) {
   console.log('URL params:', Object.fromEntries(urlParams.entries()))
   
   const [images, setImages] = useState([])
+  const [driveUrl, setDriveUrl] = useState('')
   const [selectedImage, setSelectedImage] = useState(null)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [selectedImages, setSelectedImages] = useState(new Set())
@@ -639,7 +648,7 @@ function ClientGallery({ clientName, displayName, isDarkMode, onBack }) {
   const prevPageRef = useRef(1)
 
   useEffect(() => {
-    // Carrega informações do cliente a partir do manifest e carrega as imagens da pasta
+    // Carrega informações do cliente a partir do manifest local
     const loadClientInfo = async () => {
       try {
         // Lê do manifest build-time (sem fetch de arquivos soltos)

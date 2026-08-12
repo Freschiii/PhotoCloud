@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { HashRouter as Router, Routes, Route, useParams, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Camera, Mail, Phone, Instagram, Sun, Moon, ChevronLeft, ChevronRight, Aperture, ArrowLeft } from 'lucide-react'
+import { Menu, X, Camera, Mail, Phone, Instagram, Sun, Moon, ChevronLeft, ChevronRight, Aperture, ArrowLeft, Folder, Plus, Film, Trash2, AlertTriangle, RotateCcw, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button.jsx'
 import ClientGallery from './components/ClientGallery.jsx'
 import Resume from './components/Resume.jsx'
 import ClientList from './components/ClientList.jsx'
 import AdminPanel from './components/AdminPanel.jsx'
+import TestProjectsPage from './components/TestProjectsPage.jsx'
 import { getClientById } from './lib/clientsManifest.js'
+import { supabase, isSupabaseConfigured } from './lib/supabase.js'
 import './App.css'
 
 // Componente para controlar a rolagem da página
@@ -425,145 +427,331 @@ function Navigation({ isDarkMode, toggleDarkMode }) {
 
 function HomePage({ isDarkMode, onImageClick, backgroundImages, currentBackgroundIndex }) {
   const navigate = useNavigate()
-  // Função para embaralhar array e pegar 3 imagens aleatórias
+
   const getRandomImages = () => {
     const shuffled = [...galleryImages].sort(() => 0.5 - Math.random())
-    return shuffled.slice(0, 3)
+    return shuffled.slice(0, 6)
   }
 
   const [randomImages] = useState(() => getRandomImages())
 
-  // Função para lidar com clique nas imagens
   const handleImageClick = (image) => {
     onImageClick(image)
     navigate('/galeria')
   }
 
+  const bg = isDarkMode ? '#0F1217' : '#FAFAFA'
+  const card = isDarkMode ? 'bg-[#141821] border border-white/5' : 'bg-white border border-gray-100'
+  const headingColor = isDarkMode ? 'text-white' : 'text-gray-900'
+  const subColor = isDarkMode ? 'text-gray-400' : 'text-gray-500'
+
+  const sections = [
+    {
+      id: 'galeria',
+      label: 'Galeria',
+      description: 'Explore o portfólio completo com retratos, eventos e paisagens',
+      icon: (<svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>),
+      gradient: 'from-violet-500 to-purple-700',
+      path: '/galeria'
+    },
+    {
+      id: 'projetos',
+      label: 'Projetos',
+      description: 'Vídeos, clipes musicais e colaborações audiovisuais',
+      icon: (<svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>),
+      gradient: 'from-indigo-500 to-blue-700',
+      path: '/projetos'
+    },
+    {
+      id: 'clientes',
+      label: 'Área do Cliente',
+      description: 'Acesse seu álbum privado com segurança e praticidade',
+      icon: (<svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>),
+      gradient: 'from-emerald-500 to-teal-700',
+      path: '/clientes'
+    },
+    {
+      id: 'curriculo',
+      label: 'Currículo',
+      description: 'Formação, experiências e habilidades profissionais',
+      icon: (<svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>),
+      gradient: 'from-amber-500 to-orange-600',
+      path: '/curriculo'
+    },
+    {
+      id: 'contato',
+      label: 'Contato',
+      description: 'Agende um ensaio ou tire dúvidas sobre valores',
+      icon: (<svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>),
+      gradient: 'from-rose-500 to-pink-700',
+      path: '/contato'
+    },
+  ]
+
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? '' : 'bg-white'}`} style={isDarkMode ? { backgroundColor: '#0F1217' } : {}}>
+    <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: bg }}>
+
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
           {backgroundImages.length > 0 ? (
             <AnimatePresence mode="wait">
-              <motion.img 
+              <motion.img
                 key={currentBackgroundIndex}
-                src={backgroundImages[currentBackgroundIndex]} 
-                alt="Ricardo Freschi Photography" 
+                src={backgroundImages[currentBackgroundIndex]}
+                alt="Ricardo Freschi Photography"
                 className="w-full h-full object-cover"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                initial={{ opacity: 0, scale: 1.04 }}
+                animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 1.5, ease: "easeInOut" }}
+                transition={{ duration: 1.8, ease: 'easeInOut' }}
               />
             </AnimatePresence>
           ) : (
-          <img 
-            src={heroImage} 
-            alt="Ricardo Freschi Photography" 
-            className="w-full h-full object-cover"
-          />
+            <img src={heroImage} alt="Ricardo Freschi Photography" className="w-full h-full object-cover" />
           )}
-          <div className="absolute inset-0 bg-black/40"></div>
-          
+          <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/70" />
         </div>
-        
-        <motion.div 
-          className="absolute left-1/2 transform -translate-x-1/2 z-10 text-center text-white px-4 hero-text-position"
-          initial={{ opacity: 0, y: 50 }}
+
+        {/* Pílula "Fotógrafo Profissional" — topo da hero */}
+        <motion.div
+          className="absolute top-24 left-0 right-0 z-10 flex justify-center"
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.5 }}
+          transition={{ delay: 0.6 }}
         >
-          <h1 className="font-serif text-5xl md:text-7xl font-bold mb-4">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur border border-white/20 text-sm text-white/80">
+            <Camera className="w-4 h-4" />
+            Fotógrafo Profissional
+          </div>
+        </motion.div>
+
+        {/* Título, subtítulo e botões — parte inferior */}
+        <motion.div
+          className="absolute bottom-10 left-0 right-0 z-10 text-center text-white px-4"
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.1, delay: 0.3, ease: 'easeOut' }}
+        >
+          <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl font-bold mb-4 tracking-tight drop-shadow-lg">
             Ricardo Freschi
           </h1>
-          <p className="text-xl md:text-2xl font-light mb-8">
-            Fotógrafo Profissional
+          <p className="text-lg md:text-2xl font-light text-white/80 mb-10 max-w-xl mx-auto">
+            Transformando momentos em memórias eternas
           </p>
 
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button
+              onClick={() => navigate('/galeria')}
+              className="px-8 py-3.5 rounded-full bg-white text-gray-900 font-semibold text-base hover:bg-white/90 transition-all duration-200 hover:scale-105 shadow-xl"
+            >
+              Ver Portfólio
+            </button>
+            <button
+              onClick={() => navigate('/contato')}
+              className="px-8 py-3.5 rounded-full bg-white/10 backdrop-blur border border-white/30 text-white font-semibold text-base hover:bg-white/20 transition-all duration-200 hover:scale-105"
+            >
+              Entrar em Contato
+            </button>
+          </div>
         </motion.div>
+
       </section>
 
-      {/* Gallery Preview Section */}
-      <section className={`py-20 px-4 transition-colors duration-300 ${isDarkMode ? '' : 'bg-gray-100'}`} style={isDarkMode ? { backgroundColor: '#141821' } : {}}>
-        <div className="max-w-7xl mx-auto text-center">
-          <h2 className={`font-serif text-4xl font-bold mb-8 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-            Meus Trabalhos
-          </h2>
-          <p className={`text-lg max-w-2xl mx-auto mb-12 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            Confira uma amostra do meu portfólio. Clique nas imagens para ver mais.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Gallery Preview */}
+      <section className="py-24 px-4" style={{ backgroundColor: isDarkMode ? '#141821' : '#F3F4F6' }}>
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            className="text-center mb-14"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <span className={`text-xs font-semibold tracking-[0.25em] uppercase mb-3 block ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+              Portfólio
+            </span>
+            <h2 className={`font-serif text-4xl md:text-5xl font-bold mb-4 ${headingColor}`}>
+              Meus Trabalhos
+            </h2>
+            <p className={`text-lg max-w-2xl mx-auto ${subColor}`}>
+              Uma seleção de retratos, eventos e momentos únicos capturados com paixão
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
             {randomImages.map((image, index) => (
-              <div
+              <motion.div
                 key={index}
-                className="relative group cursor-pointer overflow-hidden rounded-lg shadow-lg"
+                className="relative group cursor-pointer overflow-hidden rounded-xl shadow-lg"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.08 }}
+                viewport={{ once: true }}
                 onClick={() => handleImageClick(image)}
               >
                 <img
                   src={image.src}
                   alt={image.alt}
-                  className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
-                  style={{ 
-                    imageRendering: '-webkit-optimize-contrast'
-                  }}
+                  className="w-full h-48 md:h-64 object-cover transition-transform duration-700 group-hover:scale-110"
                   loading="lazy"
                 />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center">
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <Camera className="h-8 w-8 text-white" />
-                  </div>
-                </div>
-              </div>
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
+              </motion.div>
             ))}
           </div>
-          <button
-            className={`mt-12 py-3 px-8 rounded-lg text-lg font-medium transition-all duration-200 ${
-              isDarkMode 
-                ? 'bg-white hover:bg-gray-200 text-gray-900' 
-                : 'bg-gray-800 hover:bg-gray-700 text-white'
-            }`}
-            onClick={() => navigate("/galeria")}
-          >
-            Ver Galeria Completa
-          </button>
+
+          <div className="text-center mt-10">
+            <button
+              onClick={() => navigate('/galeria')}
+              className={`inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-semibold text-base transition-all duration-200 hover:scale-105 ${
+                isDarkMode ? 'bg-white text-gray-900 hover:bg-gray-100' : 'bg-gray-900 text-white hover:bg-gray-800'
+              }`}
+            >
+              <Camera className="w-4 h-4" />
+              Ver Galeria Completa
+            </button>
+          </div>
         </div>
       </section>
 
-      {/* About Section */}
-      <section className={`py-20 px-4 transition-colors duration-300 ${isDarkMode ? '' : 'bg-gray-50'}`} style={isDarkMode ? { backgroundColor: '#0F1217' } : {}}>
-        <div className="max-w-4xl mx-auto text-center">
+      {/* Seções das outras páginas */}
+      <section className="py-24 px-4" style={{ backgroundColor: bg }}>
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            className="text-center mb-14"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <span className={`text-xs font-semibold tracking-[0.25em] uppercase mb-3 block ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
+              Explore
+            </span>
+            <h2 className={`font-serif text-4xl md:text-5xl font-bold mb-4 ${headingColor}`}>
+              O que você encontra aqui
+            </h2>
+            <p className={`text-lg max-w-2xl mx-auto ${subColor}`}>
+              Navegue pelo portfólio, projetos audiovisuais, currículo e muito mais
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {sections.map((s, i) => (
+              <motion.button
+                key={s.id}
+                onClick={() => navigate(s.path)}
+                className={`group text-left w-full p-6 rounded-2xl ${card} hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 cursor-pointer`}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                viewport={{ once: true }}
+              >
+                <div className={`inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br ${s.gradient} text-white mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                  {s.icon}
+                </div>
+                <h3 className={`text-xl font-bold mb-2 ${headingColor} group-hover:opacity-80 transition-opacity`}>
+                  {s.label}
+                </h3>
+                <p className={`text-sm leading-relaxed ${subColor}`}>
+                  {s.description}
+                </p>
+                <div className={`mt-4 inline-flex items-center gap-1 text-sm font-semibold bg-gradient-to-r ${s.gradient} bg-clip-text text-transparent`}>
+                  Acessar
+                  <svg className="w-4 h-4 translate-x-0 group-hover:translate-x-1 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Especialidades */}
+      <section className="py-24 px-4" style={{ backgroundColor: isDarkMode ? '#141821' : '#F3F4F6' }}>
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            className="text-center mb-14"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <span className={`text-xs font-semibold tracking-[0.25em] uppercase mb-3 block ${isDarkMode ? 'text-rose-400' : 'text-rose-600'}`}>
+              Especialidades
+            </span>
+            <h2 className={`font-serif text-4xl md:text-5xl font-bold mb-4 ${headingColor}`}>
+              Capturando Momentos Únicos
+            </h2>
+            <p className={`text-lg max-w-2xl mx-auto ${subColor}`}>
+              Especializado em retratos profissionais, fotografia de eventos e paisagens.
+              Cada clique é uma história que merece ser contada.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              { icon: '🎭', title: 'Retratos', desc: 'Capturando a personalidade e essência única de cada pessoa com luz e composição impecáveis.', gradBg: isDarkMode ? 'bg-violet-900/30 border-violet-500/20' : 'bg-violet-50 border-violet-200' },
+              { icon: '🎉', title: 'Eventos', desc: 'Documentando seus momentos mais especiais: festas, corporativos e celebrações inesquecíveis.', gradBg: isDarkMode ? 'bg-indigo-900/30 border-indigo-500/20' : 'bg-indigo-50 border-indigo-200' },
+              { icon: '🌄', title: 'Paisagens', desc: 'Revelando a beleza do mundo natural e urbano através de perspectivas únicas e cativantes.', gradBg: isDarkMode ? 'bg-emerald-900/30 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200' },
+            ].map((item, i) => (
+              <motion.div
+                key={item.title}
+                className={`p-8 rounded-2xl border text-center ${item.gradBg}`}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: i * 0.15 }}
+                viewport={{ once: true }}
+              >
+                <div className="text-4xl mb-4">{item.icon}</div>
+                <h3 className={`text-xl font-bold mb-3 ${headingColor}`}>{item.title}</h3>
+                <p className={`text-sm leading-relaxed ${subColor}`}>{item.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Final */}
+      <section className="py-24 px-4 relative overflow-hidden" style={{ backgroundColor: bg }}>
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className={`absolute -top-32 -right-32 w-96 h-96 rounded-full blur-3xl opacity-20 ${isDarkMode ? 'bg-purple-600' : 'bg-purple-300'}`} />
+          <div className={`absolute -bottom-32 -left-32 w-96 h-96 rounded-full blur-3xl opacity-20 ${isDarkMode ? 'bg-indigo-600' : 'bg-indigo-300'}`} />
+        </div>
+        <div className="max-w-3xl mx-auto text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className={`font-serif text-4xl font-bold mb-8 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
-              Capturando Momentos Únicos
+            <h2 className={`font-serif text-4xl md:text-5xl font-bold mb-6 ${headingColor}`}>
+              Vamos criar algo incrível juntos?
             </h2>
-            <p className={`text-lg leading-relaxed mb-8 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-              Especializado em retratos profissionais, fotografia de eventos e paisagens. 
-              Transformo momentos especiais em memórias eternas 
-              através da arte da fotografia.
+            <p className={`text-lg mb-10 ${subColor}`}>
+              Seja um ensaio fotográfico, cobertura de evento ou projeto audiovisual. Estou pronto para transformar a sua ideia em imagem.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
-              <div className="text-center">
-                <h3 className={`font-semibold text-xl mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Retratos</h3>
-                <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>Capturando a essência única de cada pessoa</p>
-              </div>
-              <div className="text-center">
-                <h3 className={`font-semibold text-xl mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Eventos</h3>
-                <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>Documentando seus momentos mais especiais</p>
-              </div>
-              <div className="text-center">
-                <h3 className={`font-semibold text-xl mb-2 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Paisagens</h3>
-                <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>Revelando a beleza do mundo natural</p>
-              </div>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button
+                onClick={() => navigate('/contato')}
+                className="px-10 py-4 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-base transition-all duration-200 hover:scale-105 shadow-xl"
+              >
+                Entrar em Contato
+              </button>
+              <button
+                onClick={() => navigate('/clientes')}
+                className={`px-10 py-4 rounded-full font-semibold text-base transition-all duration-200 hover:scale-105 ${
+                  isDarkMode ? 'bg-white/10 hover:bg-white/15 text-white border border-white/20' : 'bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200'
+                }`}
+              >
+                Área do Cliente
+              </button>
             </div>
           </motion.div>
         </div>
       </section>
+
     </div>
   )
 }
@@ -865,8 +1053,227 @@ function GalleryPage({ isDarkMode, selectedImage }) {
 }
 
 function ProjectsPage({ isDarkMode }) {
-  // Dados vindos dos .txt na pasta de projetos
-  const projects = importProjectTexts()
+  const [projects, setProjects] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const isAdmin = localStorage.getItem('adminAuth') === 'true'
+
+  // Modal e formulário de projetos
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingProject, setEditingProject] = useState(null)
+  const [projectTitle, setProjectTitle] = useState('')
+  const [projectRole, setProjectRole] = useState('')
+  const [projectYear, setProjectYear] = useState('')
+  const [projectVideoUrl, setProjectVideoUrl] = useState('')
+  const [projectDescription, setProjectDescription] = useState('')
+  const [projectCoverFile, setProjectCoverFile] = useState(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [projectError, setProjectError] = useState('')
+  const [projectSuccess, setProjectSuccess] = useState('')
+
+  // Confirmação de exclusão & Undo
+  const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, project: null })
+  const [undoToast, setUndoToast] = useState({ show: false, project: null, secondsLeft: 6 })
+  const undoTimeoutRef = useRef(null)
+  const undoIntervalRef = useRef(null)
+
+  const loadProjects = async () => {
+    setLoading(true)
+    const staticProjects = importProjectTexts()
+    let dbProjects = []
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .order('created_at', { ascending: false })
+
+        if (!error && data) {
+          dbProjects = data.map((p) => ({
+            id: p.id,
+            title: p.title || p.name,
+            description: p.description || '',
+            videoUrl: p.video_url || '',
+            videoFile: p.cover_url || '',
+            role: p.role || '',
+            year: p.year || '',
+            isSupabase: true,
+          }))
+        }
+      } catch (e) {
+        console.warn('Erro ao carregar projetos do Supabase:', e)
+      }
+    }
+
+    setProjects([...dbProjects, ...staticProjects])
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    loadProjects()
+  }, [])
+
+  const handleOpenCreateModal = () => {
+    setEditingProject(null)
+    setProjectTitle('')
+    setProjectRole('')
+    setProjectYear('')
+    setProjectVideoUrl('')
+    setProjectDescription('')
+    setProjectCoverFile(null)
+    setProjectError('')
+    setProjectSuccess('')
+    setIsModalOpen(true)
+  }
+
+  const handleOpenEditModal = (project) => {
+    setEditingProject(project)
+    setProjectTitle(project.title || '')
+    setProjectRole(project.role || '')
+    setProjectYear(project.year || '')
+    setProjectVideoUrl(project.videoUrl || '')
+    setProjectDescription(project.description || '')
+    setProjectCoverFile(null)
+    setProjectError('')
+    setProjectSuccess('')
+    setIsModalOpen(true)
+  }
+
+  const handleSaveProjectSupabase = async (e) => {
+    e.preventDefault()
+    if (!projectTitle.trim()) return
+
+    setIsUploading(true)
+    setProjectError('')
+    setProjectSuccess('')
+
+    try {
+      let coverUrl = editingProject ? (editingProject.videoFile || '') : ''
+
+      if (projectCoverFile) {
+        const filePath = `covers/${Date.now()}_${projectCoverFile.name}`
+        const { error: uploadErr } = await supabase.storage
+          .from('client-photos')
+          .upload(filePath, projectCoverFile)
+
+        if (!uploadErr) {
+          const { data: publicUrlData } = supabase.storage
+            .from('client-photos')
+            .getPublicUrl(filePath)
+          coverUrl = publicUrlData?.publicUrl || coverUrl
+        }
+      }
+
+      if (editingProject && editingProject.isSupabase) {
+        const { error: updateErr } = await supabase
+          .from('projects')
+          .update({
+            title: projectTitle,
+            role: projectRole,
+            year: projectYear,
+            video_url: projectVideoUrl,
+            description: projectDescription,
+            ...(coverUrl ? { cover_url: coverUrl } : {}),
+          })
+          .eq('id', editingProject.id)
+
+        if (updateErr) throw new Error(updateErr.message)
+        setProjectSuccess('Projeto atualizado com sucesso!')
+      } else {
+        const { error: insertErr } = await supabase
+          .from('projects')
+          .insert([
+            {
+              title: projectTitle,
+              role: projectRole,
+              year: projectYear,
+              video_url: projectVideoUrl,
+              description: projectDescription,
+              cover_url: coverUrl,
+            },
+          ])
+
+        if (insertErr) throw new Error(insertErr.message)
+        setProjectSuccess('Projeto cadastrado com sucesso!')
+      }
+
+      setProjectTitle('')
+      setProjectRole('')
+      setProjectYear('')
+      setProjectVideoUrl('')
+      setProjectDescription('')
+      setProjectCoverFile(null)
+      setEditingProject(null)
+
+      setTimeout(() => {
+        setIsModalOpen(false)
+        setProjectSuccess('')
+        loadProjects()
+      }, 1200)
+    } catch (err) {
+      setProjectError(err.message || 'Erro ao salvar projeto.')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleRequestDelete = (project) => {
+    setDeleteConfirmation({ isOpen: true, project })
+  }
+
+  const confirmDeletion = () => {
+    const project = deleteConfirmation.project
+    setDeleteConfirmation({ isOpen: false, project: null })
+    if (!project) return
+
+    if (undoToast.show && undoToast.project) {
+      executePermanentDeletion(undoToast.project)
+    }
+
+    setProjects((prev) => prev.filter((p) => p.id !== project.id))
+
+    let secondsLeft = 6
+    setUndoToast({ show: true, project, secondsLeft })
+
+    if (undoIntervalRef.current) clearInterval(undoIntervalRef.current)
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current)
+
+    undoIntervalRef.current = setInterval(() => {
+      secondsLeft -= 1
+      if (secondsLeft > 0) {
+        setUndoToast((prev) => ({ ...prev, secondsLeft }))
+      } else {
+        clearInterval(undoIntervalRef.current)
+      }
+    }, 1000)
+
+    undoTimeoutRef.current = setTimeout(() => {
+      executePermanentDeletion(project)
+      setUndoToast({ show: false, project: null, secondsLeft: 6 })
+      if (undoIntervalRef.current) clearInterval(undoIntervalRef.current)
+    }, 6000)
+  }
+
+  const handleUndo = () => {
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current)
+    if (undoIntervalRef.current) clearInterval(undoIntervalRef.current)
+
+    if (undoToast.project) {
+      setProjects((prev) => [undoToast.project, ...prev])
+    }
+    setUndoToast({ show: false, project: null, secondsLeft: 6 })
+  }
+
+  const executePermanentDeletion = async (project) => {
+    try {
+      if (project.id && project.isSupabase) {
+        await supabase.from('projects').delete().eq('id', project.id)
+      }
+    } catch (err) {
+      console.error('Erro ao excluir projeto do Supabase:', err)
+    }
+  }
   
   // Extrai o ID do YouTube (suporta youtu.be, youtube.com/watch?v=, e shorts)
   const getYouTubeId = (url) => {
@@ -911,17 +1318,27 @@ function ProjectsPage({ isDarkMode }) {
     <div className={`min-h-screen py-20 px-4 transition-colors duration-300`} style={themedBgStyle}>
       <div className="max-w-7xl mx-auto">
         <motion.div 
-          className="text-center mb-16"
+          className="text-center mb-12 flex flex-col items-center gap-3"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
         >
-          <h1 className={`text-4xl md:text-5xl font-bold mb-4 ${headerText}`}>
+          <h1 className={`text-4xl md:text-5xl font-bold ${headerText}`}>
             Outros projetos
           </h1>
           <p className={`text-lg ${subText}`}>
             Conheça alguns dos projetos em que participei
           </p>
+
+          {isAdmin && isSupabaseConfigured && (
+            <Button
+              onClick={handleOpenCreateModal}
+              className="mt-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-xl flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold transition-all hover:scale-105"
+            >
+              <Plus className="w-5 h-5" />
+              Novo Projeto
+            </Button>
+          )}
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -990,9 +1407,31 @@ function ProjectsPage({ isDarkMode }) {
 
                 {/* Conteúdo do Projeto */}
                 <div className="p-6">
-                  <h3 className={`text-xl font-bold mb-2 ${headerText}`}>
-                    {project.title}
-                  </h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className={`text-xl font-bold ${headerText}`}>
+                      {project.title}
+                    </h3>
+                    {isAdmin && project.isSupabase && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditModal(project)}
+                          className="text-indigo-400 hover:text-indigo-300 p-1.5 rounded-lg hover:bg-indigo-950/40 transition-colors"
+                          title="Editar Projeto"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRequestDelete(project)}
+                          className="text-red-400 hover:text-red-300 p-1.5 rounded-lg hover:bg-red-950/40 transition-colors"
+                          title="Excluir Projeto"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
                   {project.role || project.year ? (
                     <div className="flex items-center gap-3 mb-3">
@@ -1009,7 +1448,7 @@ function ProjectsPage({ isDarkMode }) {
                     </div>
                   ) : null}
 
-                  <p className={`text-sm leading-relaxed ${subText}`}>
+                  <p className={`text-sm leading-relaxed whitespace-pre-line break-words mb-4 ${subText}`}>
                     {project.description}
                   </p>
 
@@ -1039,6 +1478,168 @@ function ProjectsPage({ isDarkMode }) {
             )
           })}
         </div>
+
+        {/* Modal de Aviso de Exclusão */}
+        {deleteConfirmation.isOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <div className={`w-full max-w-md p-6 rounded-2xl shadow-2xl border ${isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-900'}`}>
+              <div className="flex items-center gap-3 mb-4 text-red-500">
+                <div className="p-3 rounded-full bg-red-500/10">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-bold">Confirmar Exclusão</h3>
+              </div>
+              
+              <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                Tem certeza que deseja excluir o projeto <strong>"{deleteConfirmation.project?.title}"</strong>?
+                <span className="block mt-2 text-xs text-red-400 font-medium">
+                  Você terá 6 segundos para desfazer essa exclusão antes que seja apagado do Supabase.
+                </span>
+              </p>
+
+              <div className="flex justify-end gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setDeleteConfirmation({ isOpen: false, project: null })}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  onClick={confirmDeletion}
+                  className="bg-red-600 hover:bg-red-700 text-white shadow-lg"
+                >
+                  Sim, Excluir
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Toast com Botão Temporário de Desfazer (Undo) */}
+        <AnimatePresence>
+          {undoToast.show && (
+            <motion.div
+              initial={{ opacity: 0, y: 50, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 50, scale: 0.95 }}
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between gap-4 px-5 py-3.5 rounded-2xl bg-gray-900 text-white shadow-2xl border border-gray-700 min-w-[320px] max-w-md"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+                <div>
+                  <p className="text-sm font-medium">
+                    Projeto "{undoToast.project?.title}" removido
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Excluindo definitivamente em {undoToast.secondsLeft}s...
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                onClick={handleUndo}
+                size="sm"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold flex items-center gap-1.5 shadow-md"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Desfazer
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal para adicionar/editar projeto no Supabase */}
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className={`w-full max-w-lg p-6 rounded-2xl shadow-2xl ${isDarkMode ? 'bg-gray-800 border border-gray-700 text-white' : 'bg-white text-gray-900'}`}>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  <Film className="w-5 h-5 text-indigo-500" />
+                  {editingProject ? 'Editar Projeto' : 'Novo Projeto'}
+                </h3>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="p-1 text-gray-400 hover:text-gray-200 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveProjectSupabase} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Título do Projeto</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Clipes Musicais - Banda XYZ"
+                    value={projectTitle}
+                    onChange={(e) => setProjectTitle(e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Função / Cargo</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Direção de Fotografia"
+                      value={projectRole}
+                      onChange={(e) => setProjectRole(e.target.value)}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Ano</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: 2025"
+                      value={projectYear}
+                      onChange={(e) => setProjectYear(e.target.value)}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">URL do Vídeo (YouTube, TikTok, Vimeo)</label>
+                  <input
+                    type="url"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    value={projectVideoUrl}
+                    onChange={(e) => setProjectVideoUrl(e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Descrição</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Resumo do projeto..."
+                    value={projectDescription}
+                    onChange={(e) => setProjectDescription(e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                  />
+                </div>
+
+                {projectError && <p className="text-xs text-red-400 bg-red-950/50 p-2 rounded border border-red-800">{projectError}</p>}
+                {projectSuccess && <p className="text-xs text-green-400 bg-green-950/50 p-2 rounded border border-green-800">{projectSuccess}</p>}
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">
+                  <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} disabled={isUploading}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={isUploading || !projectTitle.trim()} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                    {isUploading ? 'Salvando...' : editingProject ? 'Salvar Alterações' : 'Salvar Projeto'}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* Modal Player */}
         <AnimatePresence>
@@ -1286,6 +1887,7 @@ function App() {
           <Route path="/clientes" element={<ClientList isDarkMode={isDarkMode} />} />
           <Route path="/cliente/:clientId" element={<ClientGalleryWrapper isDarkMode={isDarkMode} />} />
           <Route path="/admin" element={<AdminPanel isDarkMode={isDarkMode} />} />
+          <Route path="/lab" element={<TestProjectsPage />} />
           <Route path="/projetos" element={<ProjectsPage isDarkMode={isDarkMode} />} />
           <Route path="/curriculo" element={<Resume isDarkMode={isDarkMode} biographyImages={biographyImages} currentBiographyIndex={currentBiographyIndex} />} />
           <Route path="/contato" element={<ContactPage isDarkMode={isDarkMode} biographyImages={biographyImages} currentBiographyIndex={currentBiographyIndex} />} />

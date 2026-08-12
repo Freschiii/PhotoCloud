@@ -29,130 +29,37 @@ function setCachedImageCount(folder, count) {
   try { sessionStorage.setItem(`imageCount_${folder}`, String(count)) } catch (_) {}
 }
 
-// Função para descobrir automaticamente todas as pastas de clientes (manifest only)
+// Função para buscar todas as senhas dos clientes
 async function getAllClientsWithPasswords() {
-  const clients = []
   const manifestClients = getAllClients()
+  const clients = []
+
   for (const entry of manifestClients) {
-    clients.push({
-      id: entry.id,
-      name: entry.name || entry.folder,
-      password: entry.password || '',
-      hasPassword: !!entry.password,
-      realFolderName: entry.folder,
-      imageCount: entry.imageCount || 0,
-    })
-  }
-  return clients
-}
+    const folder = entry.folder
+    const clientId = entry.id
+    let clientName = entry.name || folder
+    let clientTitle = entry.name || folder
+    let password = entry.password || ''
+    let hasPassword = !!entry.password
 
-// Obsoleto com manifest: mantido vazio por compatibilidade
-async function checkAndAddClientFromFolder() {}
-
-// Obsoleto com manifest: mantido vazio por compatibilidade
-async function checkAndAddClientFromFile() {}
-
-// Função auxiliar para adicionar cliente com informações do clientes.txt
-async function checkAndAddClientFromInfo(clientFolder, clientName, password, clients) {
-  try {
-    // Verifica se já foi adicionado
-    const clientId = clientFolder.toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '')
-    
-    if (clients.find(c => c.id === clientId)) return
-    
-    // NUNCA escanear aqui para não travar /clientes. Usa cache, se existir.
-    const cached = getCachedImageCount(clientFolder)
-    const imageCount = Number.isFinite(cached) ? cached : 0
-    
-    clients.push({
-      id: clientId,
-      name: clientName,
-      password: password,
-      hasPassword: password.length > 0,
-      realFolderName: clientFolder,
-      imageCount: imageCount
-    })
-  } catch (error) {
-    // Ignora erros silenciosamente
-  }
-}
-
-// Função auxiliar para verificar e adicionar cliente
-async function checkAndAddClient(clientFolder, clients) {
-  try {
-    // Verifica se já foi adicionado
-    const clientId = clientFolder.toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '')
-    
-    if (clients.find(c => c.id === clientId)) return
-    
-    // Tenta buscar as informações no arquivo info.txt
-    let clientTitle = clientFolder
-    let clientName = clientFolder
-    let password = ''
-    let hasPassword = false
-    
-    try {
-      const infoResponse = await fetch(`/clientes/${clientFolder}/info.txt`)
-      if (infoResponse.ok) {
-        const infoText = await infoResponse.text()
-        const lines = infoText.split('\n').map(line => line.trim()).filter(line => line)
-        
-        // Procura por título, nome e senha
-        for (const line of lines) {
-          if (line.toLowerCase().startsWith('titulo:')) {
-            clientTitle = line.substring(7).trim()
-          } else if (line.toLowerCase().startsWith('nome:')) {
-            clientName = line.substring(5).trim()
-          } else if (line.toLowerCase().startsWith('senha:')) {
-            password = line.substring(6).trim()
-            hasPassword = password.length > 0
-          }
-        }
-      }
-    } catch (error) {
-      // Se não conseguir carregar as informações, usa o nome da pasta
+    let imageCount = getCachedImageCount(folder)
+    if (imageCount === null) {
+      imageCount = entry.imageCount || 0
+      setCachedImageCount(folder, imageCount)
     }
-    
-    // Conta as imagens de forma simples
-    let imageCount = 0
-    try {
-      const testImages = ['IMG_0001.jpg', 'IMG_001.jpg', 'foto1.jpg', 'image1.jpg']
-      
-      for (const img of testImages) {
-        try {
-          const response = await fetch(`/clientes/${clientFolder}/${img}`, { method: 'HEAD' })
-          if (response.ok) {
-            imageCount++
-          }
-        } catch (error) {
-          // Continua tentando
-        }
-      }
-      
-      // Estimativa baseada nas imagens encontradas
-      if (imageCount > 0) {
-        imageCount = imageCount * 5 // Estimativa conservadora
-      }
-    } catch (error) {
-      // Se der erro, deixa 0
-    }
-    
+
     clients.push({
       id: clientId,
       name: clientTitle,
       clientName: clientName,
       password: password,
       hasPassword: hasPassword,
-      realFolderName: clientFolder,
+      realFolderName: folder,
       imageCount: imageCount
     })
-  } catch (error) {
-    // Ignora erros silenciosamente
   }
+
+  return clients
 }
 
 function ClientList({ isDarkMode }) {
@@ -165,9 +72,14 @@ function ClientList({ isDarkMode }) {
 
   useEffect(() => {
     const loadClients = async () => {
-      const clientsWithPasswords = await getAllClientsWithPasswords()
-      setClients(clientsWithPasswords)
-      setLoading(false)
+      try {
+        const all = await getAllClientsWithPasswords()
+        setClients(all)
+      } catch (e) {
+        console.warn('Erro ao carregar clientes:', e)
+      } finally {
+        setLoading(false)
+      }
     }
     loadClients()
   }, [])
@@ -184,15 +96,20 @@ function ClientList({ isDarkMode }) {
     setError('')
 
     try {
-      // Procura o cliente com a senha correspondente (apenas clientes com senha)
-      const matchingClient = clients.find(client => 
-        client.hasPassword && client.password.toLowerCase() === accessCode.trim().toLowerCase()
-      )
+      const inputCode = accessCode.trim().toLowerCase()
+
+      // Procura o cliente por senha, por ID ou por Slug
+      const matchingClient = clients.find(client => {
+        if (client.password && client.password.toLowerCase() === inputCode) return true
+        if (client.id && client.id.toLowerCase() === inputCode) return true
+        if (client.slug && client.slug.toLowerCase() === inputCode) return true
+        return false
+      })
       
       if (matchingClient) {
         // Salva a autenticação do cliente no sessionStorage
         sessionStorage.setItem(`client_${matchingClient.id}`, 'true')
-        // Senha correta, navega para a galeria do cliente
+        // Código correto, navega para a galeria do cliente
         navigate(`/cliente/${matchingClient.id}`)
       } else {
         setError('Código de acesso incorreto')
