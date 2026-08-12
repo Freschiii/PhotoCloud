@@ -1,41 +1,56 @@
 {
   "name": "RICARDO FRESCHI",
-  "title": "Estudante de Rádio, TV e Internet",
+  "title": "FOTÓGRAFO, DESIGNER, EDITOR E VIDEOMAKER",
   "email": "ricardodias2004@gmail.com",
-  "phone": "+55 11 95779-8732",
+  "phone": "(11) 95779-8732",
   "address": "Rua Barão de Tatuí, 594 - Vila Buarque",
-  "summary": "Apaixonado por fotografia e equipamentos audiovisuais. Possuo um home studio básico e interesse em produção musical. Amante de câmeras e sempre em busca de aprimorar minhas habilidades no campo audiovisual.",
+  "website": "www.freschi.vercel.app",
+  "summary": "Sou estudante de Rádio, TV e Internet e atuo como Fotógrafo, Videomaker, Editor de Vídeo e Designer, focado em criar conteúdos de estética minimalista e sofisticada. Cuido de projetos desde a captação e edição (Sony e Fujifilm) até o design de identidades visuais e a operação técnica de transmissões ao vivo (OBS Studio).",
   "experience": [
     {
-      "role": "Editor de vídeo e Auxiliar de Estúdio",
-      "company": "Showcase.",
-      "period": "2024 - 2025",
+      "role": "Videomaker, Fotógrafo, Designer e Editor de Vídeo",
+      "company": "Logos Seguradora",
+      "period": "2025 - 2026",
+      "description": "Fui o responsável por todo o ecossistema de comunicação visual, design e audiovisual do grupo e de sua carteira de marcas parceiras incluindo Trinité Boutique, Trindad’s Coffee, THP Studios, Septar, além da própria Logos.",
       "items": [
-        "Pós-produção de narração em audiodescrição. Ajustei pausas e equalização do áudio para que a audiodescrição fosse fluida e natural, sem interferir na experiência original do conteúdo.",
-        "Suporte técnico em gravações de estúdio. Configurei câmeras, iluminação e vídeo para garantir captação de alta qualidade dos intérpretes de Libras, minimizando retrabalho na pós-produção.",
-        "Colaboração com profissionais de acessibilidade. Trabalhei diretamente com roteiristas, locutores e intérpretes de Libras para alinhar o conteúdo às necessidades do público-alvo."
+        "Identidade Visual Completa: Criação e desenvolvimento de marcas e projetos de branding do zero, abrangendo desde a concepção do logotipo até toda a papelaria institucional, como papéis timbrados e materiais corporativos.",
+        "Artes para Instagram: Criação de criativos e designs promocionais e institucionais com estética refinada e minimalista para o posicionamento digital de todas as empresas do portfólio.",
+        "Sessões de Fotos: Direção e execução de ensaios fotográficos profissionais, cobrindo tanto sessões com modelos quanto fotografia de produto e e-commerce.",
+        "Gravações e Vídeos Publicitários: Captação de imagens e produção de vídeos comerciais e institucionais de ponta, controlando o fluxo completo desde a iluminação e captação técnica até a finalização.",
+        "Edição de Vídeo: Pós-produção completa de cortes comerciais, Reels e conteúdos de alta qualidade voltados para o mercado de influenciadores."
       ]
     },
     {
-      "role": "Designer e Social Media",
-      "company": "Pandolfe Joias",
-      "period": "2019 - 2022",
+      "role": "Editor e Auxiliar de Estúdio (Estágio)",
+      "company": "Showcase",
+      "period": "2024 - 2025",
+      "description": "Atuei na edição de vídeo e pós-produção de conteúdos focados em acessibilidade para grandes players do mercado, como Globo, Record, Globoplay e Câmara dos Deputados.",
       "items": [
-        "Ampliei minha experiência com Adobe Photoshop para Instagram com artes promocionais",
-        "Desenvolvi minha experiência em grupo trabalhando em escritório"
+        "Pós-produção de narração em audiodescrição: Ajustei pausas e equalização do áudio para que a audiodescrição fosse fluida e natural, sem interferir na experiência original do conteúdo.",
+        "Suporte técnico em gravações de estúdio: Configurei câmeras, iluminação e vídeo para garantir captação de alta qualidade dos intérpretes de Libras, minimizando retrabalho na pós-produção.",
+        "Colaboração com profissionais de acessibilidade: Trabalhei diretamente com roteiristas, locutores e intérpretes de Libras para alinhar o conteúdo às necessidades do público-alvo."
+      ]
+    },
+    {
+      "role": "Designer",
+      "company": "Pandolfe Joias",
+      "period": "2020 - 2023",
+      "description": "Meu primeiro emprego na área, onde cuidei da parte visual e das redes sociais da marca.",
+      "items": [
+        "Fiz todas as postagens e imagens de divulgação da joalheria, criando o estilo visual da página no Instagram.",
+        "Cuidei de toda a parte estética e do visual das páginas do site da empresa usando WordPress.",
+        "Me adaptei à rotina de escritório e ao dia a dia de trabalho em equipe com outras pessoas."
       ]
     }
   ],
   "skillsPrograms": [
     "Adobe Photoshop",
-    "Adobe Premiere Pro", 
+    "Adobe Premiere Pro",
     "Adobe Illustrator",
-    "Adobe Lightroom",
+    "Adobe Lightroom Classic",
     "REAPER",
-    "Audacity",
-    "Studio One",
-    "FL Studio",
-    "Da Vinci Resolve"
+    "OBS Studio",
+    "Audacity"
   ],
   "skillsSpecific": [
     {
@@ -54,27 +69,23 @@
   "education": [
     {
       "institution": "Universidade Cruzeiro do Sul",
-      "course": "Rádio, TV e Internet",
-      "year": "2024",
-      "desc": "Formação em comunicação audiovisual com foco em produção de conteúdo"
+      "course": "Radio, TV e Internet",
+      "year": "2024 - 2027"
     },
     {
-      "institution": "Saga - School of Art",
-      "course": "Curso de Design",
-      "year": "2016-2020",
-      "desc": "Especialização em design gráfico e desenvolvimento de projetos criativos"
+      "institution": "Escola SAGA",
+      "course": "Curso S.T.A.R.T.",
+      "year": "2016 - 2020"
     }
   ],
   "languages": [
     {
-      "name": "Português",
-      "level": "Nativo"
-    },
-    {
       "name": "Inglês",
       "level": "Avançado"
+    },
+    {
+      "name": "Espanhol",
+      "level": "Básico"
     }
   ]
 }
-
-

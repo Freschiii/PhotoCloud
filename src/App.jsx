@@ -1193,7 +1193,7 @@ function ContactPage({ isDarkMode, biographyImages, currentBiographyIndex }) {
               <div className={`space-y-4 text-lg leading-relaxed ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                 <p>
                   Sou Ricardo Freschi, fotógrafo apaixonado por registrar momentos únicos e transformar 
-                  sentimentos em imagem. Há cerca de 2 anos atuo profissionalmente na fotografia, 
+                  sentimentos em imagem. Desde 2023 atuo profissionalmente na fotografia, 
                   sempre buscando transmitir autenticidade e emoção em cada clique.
                 </p>
                 
