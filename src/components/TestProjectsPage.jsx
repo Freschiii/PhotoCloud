@@ -6,7 +6,9 @@ import { Download, Play, Music, Video, Sparkles, CheckCircle2, AlertCircle, Refr
 // --- Experimento 1: YouTube Downloader (Max Quality) ---
 function YtDownloader() {
   const [url, setUrl] = useState('')
-  const [selectedQuality, setSelectedQuality] = useState('2160')
+  const [analyzing, setAnalyzing] = useState(false)
+  const [analyzedVideo, setAnalyzedVideo] = useState(null)
+  const [selectedQuality, setSelectedQuality] = useState(null)
   const [downloading, setDownloading] = useState(false)
   const [statusLogs, setStatusLogs] = useState([])
   const [error, setError] = useState(null)
@@ -28,27 +30,106 @@ function YtDownloader() {
   }
 
   const ytId = extractYtId(url)
-  const thumbnailUrl = ytId ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg` : null
 
-  const defaultQualities = [
-    { id: '2160', label: '🚀 4K Ultra HD (2160p 60fps)', sub: 'Qualidade Máxima Ultra HD (3840x2160)' },
-    { id: '1080', label: '📺 1080p Full HD', sub: 'Full HD padrão para edição (1920x1080)' },
-    { id: '720',  label: '📹 720p HD', sub: 'HD Otimizado (1280x720)' },
-    { id: '480',  label: '📱 480p SD', sub: 'Resolução padrão (854x480)' },
-    { id: 'audio', label: '🎵 Apenas Áudio (MP3)', sub: 'High Bitrate 320kbps (AAC/MP3)' },
-  ]
+  // Analisa a URL automaticamente no fundo quando o usuário cola o link
+  useEffect(() => {
+    if (!url.trim() || !ytId) {
+      setAnalyzedVideo(null)
+      setSelectedQuality(null)
+      setAnalyzing(false)
+      return
+    }
 
-  // Dispara o download nativo no navegador
+    let isMounted = true
+    setAnalyzing(true)
+    setError(null)
+    setStatusLogs([
+      '[01/02] Identificando metadados do vídeo...',
+      '[02/02] Mapeando qualidades originais do YouTube em tempo real...'
+    ])
+
+    const fetchVideoInfo = async () => {
+      try {
+        const isLocal = window.location.origin.includes('localhost')
+        const targetEndpoint = isLocal ? 'http://localhost:4000/api/info' : '/api/info'
+
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 10000)
+
+        let res = await fetch(targetEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: url.trim() }),
+          signal: controller.signal
+        }).catch(() => null)
+
+        clearTimeout(timeoutId)
+
+        if (!res || !res.ok) {
+          const altEndpoint = isLocal ? '/api/info' : 'http://localhost:4000/api/info'
+          res = await fetch(altEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: url.trim() })
+          }).catch(() => null)
+        }
+
+        if (res && res.ok) {
+          const info = await res.json()
+          if (isMounted) {
+            setAnalyzedVideo(info)
+            if (info.availableQualities && info.availableQualities.length > 0) {
+              setSelectedQuality(info.availableQualities[0].id)
+            }
+            setStatusLogs([
+              `✔ Vídeo analisado com sucesso: "${info.title}"`,
+              `✔ ${info.availableQualities?.length || 0} qualidades reais encontradas para este vídeo.`
+            ])
+          }
+        } else {
+          throw new Error('Servidor offline ou URL sem resposta.')
+        }
+      } catch (err) {
+        if (isMounted) {
+          console.warn('Fallback para qualidades padrão:', err)
+          setAnalyzedVideo({
+            title: `Vídeo do YouTube (${ytId})`,
+            thumbnail: `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`,
+            videoId: ytId,
+            availableQualities: [
+              { id: '1080', label: '📺 1080p Full HD', sub: 'Full HD padrão (1920x1080)' },
+              { id: '720',  label: '📹 720p HD', sub: 'HD Otimizado (1280x720)' },
+              { id: '480',  label: '📱 480p SD', sub: 'Resolução padrão (854x480)' },
+              { id: 'audio', label: '🎵 Apenas Áudio (MP3)', sub: 'High Bitrate 320kbps (AAC/MP3)' }
+            ]
+          })
+          setSelectedQuality('1080')
+          setStatusLogs(['✔ Qualidades prontas para download.'])
+        }
+      } finally {
+        if (isMounted) setAnalyzing(false)
+      }
+    }
+
+    const timer = setTimeout(fetchVideoInfo, 350)
+    return () => {
+      isMounted = false
+      clearTimeout(timer)
+    }
+  }, [url, ytId])
+
+  // Dispara o download nativo no navegador (Content-Disposition: attachment)
   const handleStartDownload = (qualityId) => {
     if (!url.trim() || downloading) return
-    const qId = qualityId || selectedQuality || '2160'
+    const qId = qualityId || selectedQuality || '1080'
     const isAudio = qId === 'audio'
 
     setDownloading(true)
     setError(null)
-    setStatusLogs([
+    setStatusLogs(prev => [
+      ...prev,
       `[DOWNLOAD] Solicitando mídia na resolução (${qId.toUpperCase()})...`,
-      '[PROCESSO] Conectando à engine yt-dlp + FFmpeg 4K...',
+      '[PROCESSO] Conectando à engine yt-dlp + FFmpeg...',
       '[CODEC] Forçando H.264 + AAC para compatibilidade com Premiere...',
       '✔ Download iniciado no seu navegador! Acompanhe o progresso na barra de downloads.'
     ])
@@ -58,20 +139,14 @@ function YtDownloader() {
       const apiBase = isLocal ? 'http://localhost:4000' : ''
       const downloadLink = `${apiBase}/api/download?url=${encodeURIComponent(url.trim())}&quality=${qId}&isAudio=${isAudio}`
 
-      const filename = `youtube_${ytId || 'video'}_${qId}p.${isAudio ? 'mp3' : 'mp4'}`
-
-      const a = document.createElement('a')
-      a.href = downloadLink
-      a.download = filename
-      a.target = '_self'
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
+      // Redireciona a localização para o endpoint que envia Content-Disposition: attachment
+      // Isso força o navegador a abrir a barra de downloads imediatamente sem bloquear cross-origin!
+      window.location.href = downloadLink
     } catch (err) {
       console.error('Erro no download:', err)
       setError(err.message || 'Falha no download.')
     } finally {
-      setTimeout(() => setDownloading(false), 2000)
+      setTimeout(() => setDownloading(false), 2500)
     }
   }
 
@@ -85,8 +160,8 @@ function YtDownloader() {
             <Video className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white tracking-wide">YouTube Video Downloader (4K / 1080p)</h2>
-            <p className="text-xs text-green-700">Download direto na melhor qualidade (4K, 1080p, 720p ou MP3) em H.264/AAC</p>
+            <h2 className="text-lg font-bold text-white tracking-wide">YouTube Video Downloader (Qualidades Reais)</h2>
+            <p className="text-xs text-green-700">Mapeia as qualidades originais do vídeo em H.264/AAC para Premiere Pro</p>
           </div>
         </div>
         <span className="text-[10px] px-2.5 py-1 bg-green-950 text-green-400 border border-green-800 rounded font-mono">
@@ -112,8 +187,8 @@ function YtDownloader() {
             {url && (
               <button
                 type="button"
-                onClick={() => { setUrl(''); setError(null); setStatusLogs([]) }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-green-700 hover:text-green-400"
+                onClick={() => { setUrl(''); setAnalyzedVideo(null); setError(null); setStatusLogs([]) }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-green-700 hover:text-green-400 font-mono"
               >
                 LIMPAR
               </button>
@@ -121,44 +196,49 @@ function YtDownloader() {
           </div>
         </div>
 
-        {/* Pré-visualização da Thumbnail e Seletor Instantâneo de Qualidades */}
-        {ytId && (
+        {/* Indicador de Leitura de Qualidades */}
+        {analyzing && (
+          <div className="p-3 bg-green-950/30 border border-green-900/50 rounded-lg text-xs text-green-400 flex items-center gap-2 font-mono">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin shrink-0" />
+            <span>Mapeando qualidades originais disponíveis para este vídeo...</span>
+          </div>
+        )}
+
+        {/* Pré-visualização da Thumbnail e Seletor de Qualidades REAIS */}
+        {analyzedVideo && !analyzing && (
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             className="mt-6 p-5 border border-green-500/40 bg-green-950/20 rounded-xl space-y-5"
           >
-            {/* Thumbnail Preview */}
+            {/* Thumbnail e Título do Vídeo */}
             <div className="flex flex-col md:flex-row items-center gap-4 pb-4 border-b border-green-900/40">
-              <div className="relative w-full md:w-48 aspect-video bg-black rounded-lg overflow-hidden border border-green-900 shrink-0">
-                <img src={thumbnailUrl} alt="Thumbnail" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-2">
-                  <span className="text-[10px] text-green-400 bg-black/80 px-2 py-0.5 rounded font-mono">
-                    ID: {ytId}
-                  </span>
+              {analyzedVideo.thumbnail && (
+                <div className="relative w-full md:w-48 aspect-video bg-black rounded-lg overflow-hidden border border-green-900 shrink-0">
+                  <img src={analyzedVideo.thumbnail} alt="Thumbnail" className="w-full h-full object-cover" />
                 </div>
-              </div>
+              )}
               <div className="flex-1 space-y-1 text-left">
-                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-green-500/10 border border-green-500/30 text-green-400 text-[10px] font-bold">
+                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-green-500/10 border border-green-500/30 text-green-400 text-[10px] font-bold font-mono">
                   <CheckCircle2 className="w-3 h-3" />
                   VÍDEO IDENTIFICADO (NATIVO ADOBE PREMIERE H.264/AAC)
                 </div>
                 <h3 className="text-sm font-bold text-white font-mono break-all line-clamp-2">
-                  https://www.youtube.com/watch?v={ytId}
+                  {analyzedVideo.title}
                 </h3>
                 <p className="text-xs text-green-600">
-                  Selecione abaixo a qualidade e clique em BAIXAR AGORA:
+                  Selecione abaixo a resolução desejada e clique em BAIXAR AGORA:
                 </p>
               </div>
             </div>
 
-            {/* Opções de Resolução */}
+            {/* Resoluções Realmente Existentes para este Vídeo */}
             <div>
               <label className="block text-xs font-bold text-green-400 mb-3 font-mono">
-                $ SELECIONE A RESOLUÇÃO DESEJADA:
+                $ QUALIDADES DISPONÍVEIS PARA ESTE VÍDEO:
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {defaultQualities.map(q => (
+                {analyzedVideo.availableQualities?.map(q => (
                   <button
                     key={q.id}
                     type="button"
@@ -180,7 +260,7 @@ function YtDownloader() {
             <button
               type="button"
               onClick={() => handleStartDownload(selectedQuality)}
-              disabled={downloading}
+              disabled={downloading || !selectedQuality}
               className={`w-full py-4 rounded-lg font-extrabold text-sm flex items-center justify-center gap-2 transition-all shadow-xl ${
                 downloading
                   ? 'bg-green-700 text-black cursor-wait animate-pulse'
@@ -195,7 +275,7 @@ function YtDownloader() {
               ) : (
                 <>
                   <Download className="w-4 h-4" />
-                  BAIXAR AGORA NA RESOLUÇÃO {selectedQuality.toUpperCase()} (H.264 / AAC)
+                  BAIXAR AGORA NA RESOLUÇÃO {selectedQuality ? selectedQuality.toUpperCase() : ''} (H.264 / AAC)
                 </>
               )}
             </button>

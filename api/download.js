@@ -67,12 +67,16 @@ export default async function handler(req, res) {
     const stats = fs.statSync(targetPath)
     res.setHeader('Content-Length', stats.size)
 
+    const safeTitle = title.replace(/[^\w\s\-\.]/gi, '_').trim() || 'youtube_video'
+    const formatLabel = isAudioOnly ? 'audio' : `${quality}p`
+    const asciiFilename = `${safeTitle}_${formatLabel}.${isAudioOnly ? 'mp3' : 'mp4'}`
+
     if (isAudioOnly) {
       res.setHeader('Content-Type', 'audio/mpeg')
-      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(title)}.mp3"`)
+      res.setHeader('Content-Disposition', `attachment; filename="${asciiFilename}"; filename*=UTF-8''${encodeURIComponent(title)}.mp3`)
     } else {
       res.setHeader('Content-Type', 'video/mp4')
-      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(title)}.mp4"`)
+      res.setHeader('Content-Disposition', `attachment; filename="${asciiFilename}"; filename*=UTF-8''${encodeURIComponent(title)}.mp4`)
     }
 
     const fileStream = fs.createReadStream(targetPath)
