@@ -37,7 +37,7 @@ export default async function handler(req, res) {
 
     let title = 'youtube_video'
     try {
-      const infoCmd = `yt-dlp --get-title "${url}"`
+      const infoCmd = `python -m yt_dlp --js-runtimes node --get-title "${url}"`
       const { stdout } = await execAsync(infoCmd)
       title = sanitizeFilename(stdout.trim())
     } catch {}
@@ -57,8 +57,8 @@ export default async function handler(req, res) {
       }
     }
 
-    const cmd = `yt-dlp ${formatArg} --extractor-args "youtube:formats=missing_pot" "${url}"`
-    await execAsync(cmd, { maxBuffer: 30 * 1024 * 1024 })
+    const cmd = `python -m yt_dlp --js-runtimes node ${formatArg} "${url}"`
+    await execAsync(cmd, { maxBuffer: 150 * 1024 * 1024 })
 
     if (!fs.existsSync(targetPath)) {
       return res.status(500).send('Não foi possível gerar a mídia em alta qualidade.')

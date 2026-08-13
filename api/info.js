@@ -19,8 +19,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'URL do YouTube não fornecida.' })
     }
 
-    const cmd = `yt-dlp -J --extractor-args "youtube:formats=missing_pot" --no-playlist "${url}"`
-    const { stdout } = await execAsync(cmd, { maxBuffer: 20 * 1024 * 1024 })
+    const cmd = `python -m yt_dlp --js-runtimes node -J --no-playlist "${url}"`
+    const { stdout } = await execAsync(cmd, { maxBuffer: 50 * 1024 * 1024 })
     const info = JSON.parse(stdout)
 
     const formats = info.formats || []

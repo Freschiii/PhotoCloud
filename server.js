@@ -30,15 +30,14 @@ app.post('/api/info', async (req, res) => {
       return res.status(400).json({ error: 'URL do YouTube não fornecida.' })
     }
 
-    const cmd = `yt-dlp -J --extractor-args "youtube:formats=missing_pot" --no-playlist "${url}"`
-    const { stdout } = await execAsync(cmd, { maxBuffer: 20 * 1024 * 1024 })
+    const cmd = `python -m yt_dlp --js-runtimes node -J --no-playlist "${url}"`
+    const { stdout } = await execAsync(cmd, { maxBuffer: 50 * 1024 * 1024 })
     const info = JSON.parse(stdout)
 
     const title = info.title || 'Vídeo do YouTube'
     const duration = info.duration || 0
     const thumbnail = info.thumbnail || `https://img.youtube.com/vi/${info.id}/maxresdefault.jpg`
 
-    // Extrai qualidades de vídeo realmente disponíveis
     const formats = info.formats || []
     const resolutionsMap = new Map()
 
@@ -75,7 +74,6 @@ app.post('/api/info', async (req, res) => {
 
     const availableQualities = Array.from(resolutionsMap.values()).sort((a, b) => b.height - a.height)
     
-    // Adiciona opção de áudio MP3
     availableQualities.push({
       id: 'audio',
       height: 0,
@@ -112,7 +110,7 @@ app.get('/api/download', async (req, res) => {
 
     let title = 'youtube_video'
     try {
-      const infoCmd = `yt-dlp --get-title "${url}"`
+      const infoCmd = `python -m yt_dlp --js-runtimes node --get-title "${url}"`
       const { stdout } = await execAsync(infoCmd)
       title = sanitizeFilename(stdout.trim())
     } catch {}
@@ -132,8 +130,8 @@ app.get('/api/download', async (req, res) => {
       }
     }
 
-    const cmd = `yt-dlp ${formatArg} --extractor-args "youtube:formats=missing_pot" "${url}"`
-    await execAsync(cmd, { maxBuffer: 40 * 1024 * 1024 })
+    const cmd = `python -m yt_dlp --js-runtimes node ${formatArg} "${url}"`
+    await execAsync(cmd, { maxBuffer: 150 * 1024 * 1024 })
 
     if (!fs.existsSync(targetPath)) {
       return res.status(500).send('Não foi possível gerar o arquivo de mídia na qualidade solicitada.')
@@ -154,7 +152,6 @@ app.get('/api/download', async (req, res) => {
     }
 
     const fileStream = fs.createReadStream(targetPath)
-    
     fileStream.pipe(res)
 
     res.on('finish', () => {
