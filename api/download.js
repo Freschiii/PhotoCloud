@@ -1,5 +1,7 @@
 import { exec } from 'child_process'
 import { promisify } from 'util'
+import fs from 'fs'
+import path from 'path'
 
 const execAsync = promisify(exec)
 
@@ -11,6 +13,10 @@ function sanitizeFilename(name) {
 }
 
 export default async function handler(req, res) {
+  const tempId = `temp_ver_${Date.now()}_${Math.random().toString(36).substring(7)}`
+  const tempFile = path.resolve(`/tmp/${tempId}.mp4`)
+  const tempMp3 = path.resolve(`/tmp/${tempId}.mp3`)
+
   res.setHeader('Access-Control-Allow-Credentials', 'true')
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST')
@@ -36,22 +42,29 @@ export default async function handler(req, res) {
       title = sanitizeFilename(stdout.trim())
     } catch {}
 
-    let formatArg = '-f "b"'
+    let formatArg = ''
+    let targetPath = tempFile
+
     if (isAudioOnly) {
-      formatArg = '-f "ba/b"'
+      formatArg = `-f "bestaudio/best" -x --audio-format mp3 -o "${tempMp3}"`
+      targetPath = tempMp3
     } else if (quality === '720') {
-      formatArg = '-f "b[height<=720]/b"'
-    } else if (quality === '480') {
-      formatArg = '-f "b[height<=480]/b"'
+      formatArg = `-f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=720]+bestaudio/best" --merge-output-format mp4 -o "${tempFile}"`
+    } else if (quality === '1080') {
+      formatArg = `-f "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=1080]+bestaudio/best" --merge-output-format mp4 -o "${tempFile}"`
+    } else {
+      formatArg = `-f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best" --merge-output-format mp4 -o "${tempFile}"`
     }
 
-    const cmd = `yt-dlp -g ${formatArg} --extractor-args "youtube:player_client=android" "${url}"`
-    const { stdout } = await execAsync(cmd)
-    const directUrl = stdout.trim().split('\n').filter(u => u.startsWith('http'))[0]
+    const cmd = `yt-dlp ${formatArg} --extractor-args "youtube:formats=missing_pot" "${url}"`
+    await execAsync(cmd, { maxBuffer: 30 * 1024 * 1024 })
 
-    if (!directUrl) {
-      return res.status(500).send('Não foi possível obter a URL de streaming.')
+    if (!fs.existsSync(targetPath)) {
+      return res.status(500).send('Não foi possível gerar a mídia em alta qualidade.')
     }
+
+    const stats = fs.statSync(targetPath)
+    res.setHeader('Content-Length', stats.size)
 
     if (isAudioOnly) {
       res.setHeader('Content-Type', 'audio/mpeg')
@@ -61,24 +74,28 @@ export default async function handler(req, res) {
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(title)}.mp4"`)
     }
 
-    const videoStream = await fetch(directUrl)
-    if (videoStream.ok) {
-      if (videoStream.headers.get('content-length')) {
-        res.setHeader('Content-Length', videoStream.headers.get('content-length'))
-      }
+    const fileStream = fs.createReadStream(targetPath)
+    fileStream.pipe(res)
 
-      const buffer = await videoStream.arrayBuffer()
-      return res.send(Buffer.from(buffer))
-    }
+    res.on('finish', () => {
+      try {
+        if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath)
+      } catch {}
+    })
 
-    res.status(500).send('Não foi possível realizar o stream da mídia.')
   } catch (err) {
     console.error('Erro no Vercel Handler /api/download:', err)
+    try {
+      if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile)
+      if (fs.existsSync(tempMp3)) fs.unlinkSync(tempMp3)
+    } catch {}
+
     if (!res.headersSent) {
-      res.status(500).send('Falha ao processar download: ' + err.message)
+      res.status(500).send('Falha ao processar download em alta resolução: ' + err.message)
     }
   }
 }
+
 
 
 

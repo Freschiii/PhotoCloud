@@ -2,6 +2,8 @@ import express from 'express'
 import cors from 'cors'
 import { exec } from 'child_process'
 import { promisify } from 'util'
+import fs from 'fs'
+import path from 'path'
 
 const execAsync = promisify(exec)
 const app = express()
@@ -18,7 +20,7 @@ function sanitizeFilename(name) {
 }
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: 'YouTube Downloader API (yt-dlp engine)', port: PORT })
+  res.json({ status: 'ok', service: 'YouTube Downloader API (yt-dlp + ffmpeg 4K Engine)', port: PORT })
 })
 
 app.post('/api/info', async (req, res) => {
@@ -28,8 +30,8 @@ app.post('/api/info', async (req, res) => {
       return res.status(400).json({ error: 'URL do YouTube não fornecida.' })
     }
 
-    const cmd = `yt-dlp -J --extractor-args "youtube:player_client=android" --no-playlist "${url}"`
-    const { stdout } = await execAsync(cmd, { maxBuffer: 10 * 1024 * 1024 })
+    const cmd = `yt-dlp -J --extractor-args "youtube:formats=missing_pot" --no-playlist "${url}"`
+    const { stdout } = await execAsync(cmd, { maxBuffer: 15 * 1024 * 1024 })
     const info = JSON.parse(stdout)
 
     const title = info.title || 'Vídeo do YouTube'
@@ -41,7 +43,7 @@ app.post('/api/info', async (req, res) => {
       duration,
       thumbnail,
       videoId: info.id,
-      maxQuality: '1080p Full HD'
+      maxQuality: '4K / 1080p 60fps'
     })
   } catch (err) {
     console.error('Erro no /api/info:', err)
@@ -50,6 +52,10 @@ app.post('/api/info', async (req, res) => {
 })
 
 app.get('/api/download', async (req, res) => {
+  const tempId = `temp_dl_${Date.now()}_${Math.random().toString(36).substring(7)}`
+  const tempFile = path.resolve(`./${tempId}.mp4`)
+  const tempMp3 = path.resolve(`./${tempId}.mp3`)
+
   try {
     const { url, quality, isAudio } = req.query
 
@@ -66,25 +72,33 @@ app.get('/api/download', async (req, res) => {
       title = sanitizeFilename(stdout.trim())
     } catch {}
 
-    let formatArg = '-f "b"'
+    let formatArg = ''
+    let targetPath = tempFile
+
     if (isAudioOnly) {
-      formatArg = '-f "ba/b"'
+      formatArg = `-f "bestaudio/best" -x --audio-format mp3 -o "${tempMp3}"`
+      targetPath = tempMp3
     } else if (quality === '720') {
-      formatArg = '-f "b[height<=720]/b"'
-    } else if (quality === '480') {
-      formatArg = '-f "b[height<=480]/b"'
+      formatArg = `-f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=720]+bestaudio/best" --merge-output-format mp4 -o "${tempFile}"`
+    } else if (quality === '1080') {
+      formatArg = `-f "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=1080]+bestaudio/best" --merge-output-format mp4 -o "${tempFile}"`
+    } else {
+      // MAX / 4K / 60FPS
+      formatArg = `-f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best" --merge-output-format mp4 -o "${tempFile}"`
     }
 
-    const cmd = `yt-dlp -g ${formatArg} --extractor-args "youtube:player_client=android" "${url}"`
-    const { stdout } = await execAsync(cmd)
-    const directUrl = stdout.trim().split('\n').filter(u => u.startsWith('http'))[0]
+    const cmd = `yt-dlp ${formatArg} --extractor-args "youtube:formats=missing_pot" "${url}"`
+    await execAsync(cmd, { maxBuffer: 30 * 1024 * 1024 })
 
-    if (!directUrl) {
-      return res.status(500).send('Não foi possível obter a URL direta de transmissão.')
+    if (!fs.existsSync(targetPath)) {
+      return res.status(500).send('Não foi possível gerar o arquivo de mídia em alta qualidade.')
     }
+
+    const stats = fs.statSync(targetPath)
 
     res.setHeader('Access-Control-Allow-Origin', '*')
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    res.setHeader('Content-Length', stats.size)
 
     if (isAudioOnly) {
       res.setHeader('Content-Type', 'audio/mpeg')
@@ -94,26 +108,31 @@ app.get('/api/download', async (req, res) => {
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(title)}.mp4"`)
     }
 
-    const videoStream = await fetch(directUrl)
-    if (videoStream.ok) {
-      if (videoStream.headers.get('content-length')) {
-        res.setHeader('Content-Length', videoStream.headers.get('content-length'))
-      }
+    const fileStream = fs.createReadStream(targetPath)
+    
+    fileStream.pipe(res)
 
-      const buffer = await videoStream.arrayBuffer()
-      return res.send(Buffer.from(buffer))
-    }
+    res.on('finish', () => {
+      try {
+        if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath)
+      } catch {}
+    })
 
-    res.status(500).send('Erro ao carregar os dados do vídeo do YouTube.')
   } catch (err) {
     console.error('Erro no /api/download:', err)
+    try {
+      if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile)
+      if (fs.existsSync(tempMp3)) fs.unlinkSync(tempMp3)
+    } catch {}
+
     if (!res.headersSent) {
-      res.status(500).send('Falha ao processar download: ' + err.message)
+      res.status(500).send('Falha ao processar download em alta resolução: ' + err.message)
     }
   }
 })
 
 app.listen(PORT, () => {
-  console.log(`🚀 YouTube Downloader API (yt-dlp engine) rodando na porta ${PORT}`)
+  console.log(`🚀 YouTube Downloader API (yt-dlp + ffmpeg 4K Engine) rodando na porta ${PORT}`)
 })
+
 
