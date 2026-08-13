@@ -51,9 +51,9 @@ export default async function handler(req, res) {
     } else {
       const height = parseInt(quality) || 0
       if (height > 0) {
-        formatArg = `-f "bestvideo[height<=${height}]+bestaudio/best" --merge-output-format mp4 --postprocessor-args "ffmpeg:-c:v libx264 -c:a aac -pix_fmt yuv420p" -o "${tempFile}"`
+        formatArg = `-f "bestvideo[height<=${height}]+bestaudio/best" --merge-output-format mp4 --postprocessor-args "ffmpeg:-c:v libx264 -preset ultrafast -c:a aac -pix_fmt yuv420p" -o "${tempFile}"`
       } else {
-        formatArg = `-f "bestvideo+bestaudio/best" --merge-output-format mp4 --postprocessor-args "ffmpeg:-c:v libx264 -c:a aac -pix_fmt yuv420p" -o "${tempFile}"`
+        formatArg = `-f "bestvideo+bestaudio/best" --merge-output-format mp4 --postprocessor-args "ffmpeg:-c:v libx264 -preset ultrafast -c:a aac -pix_fmt yuv420p" -o "${tempFile}"`
       }
     }
 

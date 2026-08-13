@@ -86,8 +86,8 @@ function YtDownloader() {
     }
   }
 
-  // 2. Dispara o download da qualidade selecionada
-  const handleStartDownload = async (qualityId) => {
+  // 2. Dispara o download nativo da qualidade selecionada no navegador
+  const handleStartDownload = (qualityId) => {
     if (!url.trim() || downloading) return
     const qId = qualityId || selectedQuality || 'max'
     const isAudio = qId === 'audio'
@@ -96,37 +96,31 @@ function YtDownloader() {
     setStatusLogs(prev => [
       ...prev,
       `[DOWNLOAD] Solicitando mídia na resolução (${qId.toUpperCase()})...`,
-      '[PROCESSO] Mesclando faixas em H.264/AAC para compatibilidade com Premiere...'
+      '[PROCESSO] Mesclando faixas em H.264/AAC com algoritmo UltraFast...',
+      '✔ Download enviado para o navegador! Acompanhe o progresso na barra de downloads.'
     ])
 
     try {
       const apiBase = window.location.origin.includes('localhost') ? 'http://localhost:4000' : ''
       const downloadLink = `${apiBase}/api/download?url=${encodeURIComponent(url.trim())}&quality=${qId}&isAudio=${isAudio}`
 
-      const response = await fetch(downloadLink)
-      if (!response.ok) throw new Error(`Status HTTP ${response.status}`)
-      
-      const blob = await response.blob()
-      const blobUrl = URL.createObjectURL(blob)
-      
       const safeTitle = (analyzedVideo?.title || 'youtube_video').replace(/[^\w\s\-\.]/gi, '_')
       const ext = isAudio ? 'mp3' : 'mp4'
       const filename = `${safeTitle}_${qId}p.${ext}`
 
+      // Dispara o download nativo no navegador (Chrome/Edge/Firefox)
       const a = document.createElement('a')
-      a.href = blobUrl
+      a.href = downloadLink
       a.download = filename
+      a.target = '_self'
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
-      
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000)
-      setStatusLogs(prev => [...prev, '✔ Download concluído com sucesso e salvo no seu computador!'])
     } catch (err) {
       console.error('Erro no download:', err)
       setStatusLogs(prev => [...prev, '[ERRO] Falha no download: ' + err.message])
     } finally {
-      setDownloading(false)
+      setTimeout(() => setDownloading(false), 2000)
     }
   }
 
