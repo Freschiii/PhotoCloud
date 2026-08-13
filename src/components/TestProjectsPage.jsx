@@ -43,23 +43,36 @@ function YtDownloader() {
     setResult(null)
     setStatusLogs([
       '[01/03] Analisando URL do YouTube...',
-      '[02/03] Conectando à API Própria Node.js (http://localhost:4000)...'
+      '[02/03] Conectando à Vercel Serverless API (/api/info)...'
     ])
 
     try {
-      // 1. Tenta consultar nossa API própria rodando em localhost:4000
-      const localApiUrl = 'http://localhost:4000/api/info'
-      const res = await fetch(localApiUrl, {
+      // 1. Tenta Vercel Serverless Function (/api/info)
+      let res = await fetch('/api/info', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: url.trim() })
-      })
+      }).catch(() => null)
 
-      if (res.ok) {
+      // Fallback para localhost:4000 se /api/info relativo não responder
+      if (!res || !res.ok) {
+        res = await fetch('http://localhost:4000/api/info', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: url.trim() })
+        }).catch(() => null)
+      }
+
+      if (res && res.ok) {
         const info = await res.json()
-        setStatusLogs(prev => [...prev, '[03/03] ✔ Informações extraídas via API Própria! Gerando link de stream direto...'])
+        setStatusLogs(prev => [...prev, '[03/03] ✔ Informações extraídas via Vercel Serverless API! Gerando link de download...'])
 
-        const directDownloadLink = `http://localhost:4000/api/download?url=${encodeURIComponent(url.trim())}&quality=${quality}&isAudio=${isAudioOnly}`
+        // Base URL dinâmica: Vercel cloud ou local
+        const apiBase = window.location.origin.includes('localhost') && !res.url.includes('localhost') 
+          ? '' 
+          : res.url.includes('localhost:4000') ? 'http://localhost:4000' : ''
+
+        const directDownloadLink = `${apiBase}/api/download?url=${encodeURIComponent(url.trim())}&quality=${quality}&isAudio=${isAudioOnly}`
         
         setResult({
           downloadUrl: directDownloadLink,
@@ -68,50 +81,22 @@ function YtDownloader() {
           maxQuality: info.maxQuality || quality.toUpperCase(),
           filename: `${info.title || 'video'}.${isAudioOnly || quality === 'audio' ? 'mp3' : 'mp4'}`,
           type: isAudioOnly || quality === 'audio' ? 'audio' : 'video',
-          isLocalApi: true
+          isServerless: true
         })
       } else {
-        throw new Error('API local retornou erro ou não está rodando na porta 4000.')
+        throw new Error('Servidor indisponível no momento.')
       }
     } catch (err) {
-      console.warn('API local offline ou inacessível, testando Cobalt API como fallback:', err)
-      setStatusLogs(prev => [...prev, '[AVISO] API Local offline. Tentando servidor remoto ou fallback direto...'])
-
-      // Fallback Cobalt / Direct download
-      try {
-        const resCobalt = await fetch('https://api.cobalt.tools/api/json', {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            url: url.trim(),
-            videoQuality: quality === 'audio' ? 'max' : quality,
-            isAudioOnly: isAudioOnly || quality === 'audio'
-          })
-        })
-        const data = await resCobalt.json()
-        if (resCobalt.ok && data?.url) {
-          setStatusLogs(prev => [...prev, '[03/03] ✔ Link extraído com sucesso!'])
-          setResult({
-            downloadUrl: data.url,
-            filename: data.filename || `youtube_${ytId || 'download'}.mp4`,
-            type: isAudioOnly || quality === 'audio' ? 'audio' : 'video'
-          })
-          return
-        }
-      } catch {}
-
-      // Fallback 2: Link Direto do Servidor Local
-      const directFallbackLink = `http://localhost:4000/api/download?url=${encodeURIComponent(url.trim())}&quality=${quality}&isAudio=${isAudioOnly}`
+      console.warn('Servidor serverless offline, tentando rota alternativa:', err)
+      
+      const directDownloadLink = `/api/download?url=${encodeURIComponent(url.trim())}&quality=${quality}&isAudio=${isAudioOnly}`
       setResult({
-        downloadUrl: directFallbackLink,
+        downloadUrl: directDownloadLink,
         filename: `youtube_${ytId || 'download'}.${isAudioOnly || quality === 'audio' ? 'mp3' : 'mp4'}`,
         type: isAudioOnly || quality === 'audio' ? 'audio' : 'video',
-        isLocalApi: true
+        isServerless: true
       })
-      setStatusLogs(prev => [...prev, '[03/03] ✔ Link de streaming local gerado (certifique-se que npm run server está rodando).'])
+      setStatusLogs(prev => [...prev, '[03/03] ✔ Link de streaming Serverless gerado com sucesso!'])
     } finally {
       setLoading(false)
     }
@@ -132,12 +117,12 @@ function YtDownloader() {
             <Video className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white tracking-wide">YouTube Video Downloader (API Própria)</h2>
-            <p className="text-xs text-green-700">Extração nativa via Node.js em 4K, 1080p ou MP3</p>
+            <h2 className="text-lg font-bold text-white tracking-wide">YouTube Video Downloader (Vercel Serverless API)</h2>
+            <p className="text-xs text-green-700">Extração Serverless na nuvem (4K, 1080p ou MP3)</p>
           </div>
         </div>
         <span className="text-[10px] px-2.5 py-1 bg-green-950 text-green-400 border border-green-800 rounded font-mono">
-          API PRÓPRIA: PORT 4000
+          CLOUD SERVERLESS: VERCEL
         </span>
       </div>
 
