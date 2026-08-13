@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "server": "node server.js",
     "prebuild": "node scripts/generate-client-manifest.mjs",
     "build": "vite build",
     "lint": "eslint .",
@@ -12,6 +13,7 @@
     "deploy": "npm run build && git add dist -f && git commit -m \"Deploy to GitHub Pages\" && git push origin main"
   },
   "dependencies": {
+    "@distube/ytdl-core": "^4.16.12",
     "@emotion/is-prop-valid": "^1.4.0",
     "@hookform/resolvers": "^5.0.1",
     "@radix-ui/react-accordion": "^1.2.10",
@@ -45,8 +47,10 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "cors": "^2.8.6",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.6.0",
+    "express": "^5.2.1",
     "framer-motion": "^12.15.0",
     "input-otp": "^1.4.2",
     "jszip": "^3.10.1",

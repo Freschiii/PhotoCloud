@@ -41,62 +41,77 @@ function YtDownloader() {
     setLoading(true)
     setError(null)
     setResult(null)
-    setStatusLogs(['[01/03] Analisando URL e parâmetros...', '[02/03] Conectando aos servidores de alta qualidade (Cobalt API)...'])
+    setStatusLogs([
+      '[01/03] Analisando URL do YouTube...',
+      '[02/03] Conectando à API Própria Node.js (http://localhost:4000)...'
+    ])
 
     try {
-      // Cobalt API (Engine de download em alta velocidade sem anúncios)
-      const res = await fetch('https://api.cobalt.tools/api/json', {
+      // 1. Tenta consultar nossa API própria rodando em localhost:4000
+      const localApiUrl = 'http://localhost:4000/api/info'
+      const res = await fetch(localApiUrl, {
         method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          url: url.trim(),
-          videoQuality: quality === 'audio' ? 'max' : quality,
-          isAudioOnly: isAudioOnly || quality === 'audio',
-          filenamePattern: 'basic'
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: url.trim() })
       })
 
-      const data = await res.json()
+      if (res.ok) {
+        const info = await res.json()
+        setStatusLogs(prev => [...prev, '[03/03] ✔ Informações extraídas via API Própria! Gerando link de stream direto...'])
 
-      if (res.ok && data) {
-        if (data.status === 'redirect' || data.status === 'stream') {
-          setStatusLogs(prev => [...prev, '[03/03] ✔ Stream gerado com sucesso! Pronto para download.'])
-          setResult({
-            downloadUrl: data.url,
-            filename: data.filename || `youtube_media_${ytId || 'download'}.${isAudioOnly || quality === 'audio' ? 'mp3' : 'mp4'}`,
-            type: isAudioOnly || quality === 'audio' ? 'audio' : 'video'
-          })
-        } else if (data.status === 'picker' && data.picker?.length > 0) {
-          setStatusLogs(prev => [...prev, '[03/03] ✔ Opções de mídia extraídas com sucesso!'])
-          setResult({
-            downloadUrl: data.picker[0].url,
-            picker: data.picker,
-            filename: `youtube_media_${ytId || 'download'}.${isAudioOnly || quality === 'audio' ? 'mp3' : 'mp4'}`,
-            type: isAudioOnly || quality === 'audio' ? 'audio' : 'video'
-          })
-        } else if (data.text || data.error) {
-          throw new Error(data.text || data.error || 'Erro na resposta do servidor.')
-        } else {
-          throw new Error('Servidor retornou resposta inesperada.')
-        }
+        const directDownloadLink = `http://localhost:4000/api/download?url=${encodeURIComponent(url.trim())}&quality=${quality}&isAudio=${isAudioOnly}`
+        
+        setResult({
+          downloadUrl: directDownloadLink,
+          title: info.title,
+          thumbnail: info.thumbnail || thumbnailUrl,
+          maxQuality: info.maxQuality || quality.toUpperCase(),
+          filename: `${info.title || 'video'}.${isAudioOnly || quality === 'audio' ? 'mp3' : 'mp4'}`,
+          type: isAudioOnly || quality === 'audio' ? 'audio' : 'video',
+          isLocalApi: true
+        })
       } else {
-        throw new Error(data.text || data.error || `Erro HTTP ${res.status}`)
+        throw new Error('API local retornou erro ou não está rodando na porta 4000.')
       }
     } catch (err) {
-      console.warn('Falha na API primária, gerando links alternativos:', err)
-      setStatusLogs(prev => [...prev, '[AVISO] Alternando para rota direta de emergência...'])
-      
-      // Rota alternativa de download direto
-      const fallbackUrl = `https://cobalt.tools/#${encodeURIComponent(url)}`
+      console.warn('API local offline ou inacessível, testando Cobalt API como fallback:', err)
+      setStatusLogs(prev => [...prev, '[AVISO] API Local offline. Tentando servidor remoto ou fallback direto...'])
+
+      // Fallback Cobalt / Direct download
+      try {
+        const resCobalt = await fetch('https://api.cobalt.tools/api/json', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            url: url.trim(),
+            videoQuality: quality === 'audio' ? 'max' : quality,
+            isAudioOnly: isAudioOnly || quality === 'audio'
+          })
+        })
+        const data = await resCobalt.json()
+        if (resCobalt.ok && data?.url) {
+          setStatusLogs(prev => [...prev, '[03/03] ✔ Link extraído com sucesso!'])
+          setResult({
+            downloadUrl: data.url,
+            filename: data.filename || `youtube_${ytId || 'download'}.mp4`,
+            type: isAudioOnly || quality === 'audio' ? 'audio' : 'video'
+          })
+          return
+        }
+      } catch {}
+
+      // Fallback 2: Link Direto do Servidor Local
+      const directFallbackLink = `http://localhost:4000/api/download?url=${encodeURIComponent(url.trim())}&quality=${quality}&isAudio=${isAudioOnly}`
       setResult({
-        downloadUrl: fallbackUrl,
-        isFallback: true,
-        filename: `video_${ytId || 'yt'}.mp4`,
-        type: isAudioOnly || quality === 'audio' ? 'audio' : 'video'
+        downloadUrl: directFallbackLink,
+        filename: `youtube_${ytId || 'download'}.${isAudioOnly || quality === 'audio' ? 'mp3' : 'mp4'}`,
+        type: isAudioOnly || quality === 'audio' ? 'audio' : 'video',
+        isLocalApi: true
       })
+      setStatusLogs(prev => [...prev, '[03/03] ✔ Link de streaming local gerado (certifique-se que npm run server está rodando).'])
     } finally {
       setLoading(false)
     }
@@ -117,12 +132,12 @@ function YtDownloader() {
             <Video className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white tracking-wide">YouTube Video Downloader (Max Quality)</h2>
-            <p className="text-xs text-green-700">Baixe vídeos em 4K, 1080p 60fps ou MP3 sem anúncios</p>
+            <h2 className="text-lg font-bold text-white tracking-wide">YouTube Video Downloader (API Própria)</h2>
+            <p className="text-xs text-green-700">Extração nativa via Node.js em 4K, 1080p ou MP3</p>
           </div>
         </div>
         <span className="text-[10px] px-2.5 py-1 bg-green-950 text-green-400 border border-green-800 rounded font-mono">
-          ENGINE: COBALT v10.0
+          API PRÓPRIA: PORT 4000
         </span>
       </div>
 
