@@ -19,7 +19,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'URL do YouTube não fornecida.' })
     }
 
-    const cmd = `python -m yt_dlp -J --no-warnings --no-playlist --extractor-args "youtube:player_client=android,web" "${url}"`
+    const cmd = `python -m yt_dlp -j --no-warnings --no-playlist "${url}"`
     const { stdout } = await execAsync(cmd, { maxBuffer: 50 * 1024 * 1024 })
     const info = JSON.parse(stdout)
 
