@@ -1,59 +1,43 @@
-import ytdl from '@distube/ytdl-core'
+import play from 'play-dl'
 
 export default async function handler(req, res) {
-  // CORS Headers
   res.setHeader('Access-Control-Allow-Credentials', 'true')
   res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT')
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  )
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST')
+  res.setHeader('Access-Control-Allow-Headers', '*')
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end()
   }
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método não permitido. Use POST.' })
-  }
-
   try {
     const { url } = req.body || {}
-    if (!url || !ytdl.validateURL(url)) {
+    if (!url || !play.yt_validate(url)) {
       return res.status(400).json({ error: 'URL do YouTube inválida ou não fornecida.' })
     }
 
-    const info = await ytdl.getInfo(url)
-    const title = info.videoDetails.title
-    const duration = info.videoDetails.lengthSeconds
-    const thumbnails = info.videoDetails.thumbnails
+    const info = await play.video_info(url)
+    const title = info.video_details.title
+    const duration = info.video_details.durationInSec
+    const thumbnails = info.video_details.thumbnails
     const bestThumbnail = thumbnails[thumbnails.length - 1]?.url
 
-    const formats = info.formats.map(f => ({
-      itag: f.itag,
-      qualityLabel: f.qualityLabel || (f.hasAudio && !f.hasVideo ? 'Áudio' : 'Auto'),
-      container: f.container,
-      hasVideo: f.hasVideo,
-      hasAudio: f.hasAudio,
-      height: f.height || 0,
-      bitrate: f.bitrate || 0,
+    const formats = (info.format || []).map(f => ({
+      qualityLabel: f.qualityLabel || (f.mimeType?.includes('audio') ? 'Áudio' : 'Auto'),
+      container: f.container || 'mp4',
+      hasVideo: Boolean(f.qualityLabel || f.mimeType?.includes('video')),
+      hasAudio: Boolean(f.audioBitrate || f.mimeType?.includes('audio')),
       url: f.url
     }))
 
-    const videoFormats = formats
-      .filter(f => f.hasVideo)
-      .sort((a, b) => b.height - a.height)
-
-    const audioFormats = formats
-      .filter(f => f.hasAudio && !f.hasVideo)
-      .sort((a, b) => b.bitrate - a.bitrate)
+    const videoFormats = formats.filter(f => f.hasVideo)
+    const audioFormats = formats.filter(f => !f.hasVideo && f.hasAudio)
 
     res.status(200).json({
       title,
       duration,
       thumbnail: bestThumbnail,
-      videoId: info.videoDetails.videoId,
+      videoId: info.video_details.id,
       maxQuality: videoFormats[0]?.qualityLabel || '1080p',
       videoFormats: videoFormats.slice(0, 8),
       audioFormats: audioFormats.slice(0, 4)
@@ -63,3 +47,4 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Não foi possível extrair dados do vídeo: ' + err.message })
   }
 }
+

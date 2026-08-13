@@ -104,7 +104,12 @@ function YtDownloader() {
 
   const triggerDirectDownload = (downloadLink) => {
     if (!downloadLink) return
-    window.open(downloadLink, '_blank')
+    const a = document.createElement('a')
+    a.href = downloadLink
+    a.setAttribute('download', '')
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
   }
 
   return (
