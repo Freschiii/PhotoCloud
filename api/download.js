@@ -1,4 +1,7 @@
-import play from 'play-dl'
+import { exec } from 'child_process'
+import { promisify } from 'util'
+
+const execAsync = promisify(exec)
 
 function sanitizeFilename(name) {
   return (name || 'youtube_video')
@@ -20,14 +23,35 @@ export default async function handler(req, res) {
   try {
     const { url, quality, isAudio } = req.query || {}
 
-    if (!url || !play.yt_validate(url)) {
-      return res.status(400).send('URL do YouTube inválida.')
+    if (!url) {
+      return res.status(400).send('URL do YouTube não fornecida.')
     }
 
-    const info = await play.video_info(url)
-    const title = sanitizeFilename(info.video_details.title)
-
     const isAudioOnly = isAudio === 'true' || quality === 'audio'
+
+    let title = 'video'
+    try {
+      const infoCmd = `yt-dlp --get-title "${url}"`
+      const { stdout } = await execAsync(infoCmd)
+      title = sanitizeFilename(stdout.trim())
+    } catch {}
+
+    let formatArg = '-f "b"'
+    if (isAudioOnly) {
+      formatArg = '-f "ba/b"'
+    } else if (quality === '720') {
+      formatArg = '-f "b[height<=720]/b"'
+    } else if (quality === '480') {
+      formatArg = '-f "b[height<=480]/b"'
+    }
+
+    const cmd = `yt-dlp -g ${formatArg} --extractor-args "youtube:player_client=android" "${url}"`
+    const { stdout } = await execAsync(cmd)
+    const directUrl = stdout.trim().split('\n').filter(u => u.startsWith('http'))[0]
+
+    if (!directUrl) {
+      return res.status(500).send('Não foi possível obter a URL de streaming.')
+    }
 
     if (isAudioOnly) {
       res.setHeader('Content-Type', 'audio/mpeg')
@@ -37,20 +61,22 @@ export default async function handler(req, res) {
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(title)}.mp4"`)
     }
 
-    const sourceStream = await play.stream(url, {
-      quality: isAudioOnly ? 0 : (quality === '720' ? 1 : 2)
-    })
+    const videoStream = await fetch(directUrl)
+    if (videoStream.ok && videoStream.body) {
+      if (videoStream.headers.get('content-length')) {
+        res.setHeader('Content-Length', videoStream.headers.get('content-length'))
+      }
 
-    if (sourceStream && sourceStream.stream) {
-      sourceStream.stream.on('error', (err) => {
-        console.error('Erro no stream play-dl:', err)
-        if (!res.headersSent) res.status(500).send('Erro na transmissão do arquivo.')
-      })
-
-      return sourceStream.stream.pipe(res)
+      const reader = videoStream.body.getReader()
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        res.write(value)
+      }
+      return res.end()
     }
 
-    res.status(500).send('Não foi possível gerar a transmissão do vídeo.')
+    res.status(500).send('Não foi possível realizar o stream da mídia.')
   } catch (err) {
     console.error('Erro no Vercel Handler /api/download:', err)
     if (!res.headersSent) {
@@ -58,5 +84,6 @@ export default async function handler(req, res) {
     }
   }
 }
+
 
 

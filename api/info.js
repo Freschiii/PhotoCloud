@@ -1,4 +1,7 @@
-import play from 'play-dl'
+import { exec } from 'child_process'
+import { promisify } from 'util'
+
+const execAsync = promisify(exec)
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', 'true')
@@ -12,39 +15,25 @@ export default async function handler(req, res) {
 
   try {
     const { url } = req.body || {}
-    if (!url || !play.yt_validate(url)) {
-      return res.status(400).json({ error: 'URL do YouTube inválida ou não fornecida.' })
+    if (!url) {
+      return res.status(400).json({ error: 'URL do YouTube não fornecida.' })
     }
 
-    const info = await play.video_info(url)
-    const title = info.video_details.title
-    const duration = info.video_details.durationInSec
-    const thumbnails = info.video_details.thumbnails
-    const bestThumbnail = thumbnails[thumbnails.length - 1]?.url
-
-    const formats = (info.format || []).map(f => ({
-      qualityLabel: f.qualityLabel || (f.mimeType?.includes('audio') ? 'Áudio' : 'Auto'),
-      container: f.container || 'mp4',
-      hasVideo: Boolean(f.qualityLabel || f.mimeType?.includes('video')),
-      hasAudio: Boolean(f.audioBitrate || f.mimeType?.includes('audio')),
-      url: f.url
-    }))
-
-    const videoFormats = formats.filter(f => f.hasVideo)
-    const audioFormats = formats.filter(f => !f.hasVideo && f.hasAudio)
+    const cmd = `yt-dlp -J --no-playlist "${url}"`
+    const { stdout } = await execAsync(cmd, { maxBuffer: 10 * 1024 * 1024 })
+    const info = JSON.parse(stdout)
 
     res.status(200).json({
-      title,
-      duration,
-      thumbnail: bestThumbnail,
-      videoId: info.video_details.id,
-      maxQuality: videoFormats[0]?.qualityLabel || '1080p',
-      videoFormats: videoFormats.slice(0, 8),
-      audioFormats: audioFormats.slice(0, 4)
+      title: info.title || 'Vídeo do YouTube',
+      duration: info.duration || 0,
+      thumbnail: info.thumbnail || `https://img.youtube.com/vi/${info.id}/maxresdefault.jpg`,
+      videoId: info.id,
+      maxQuality: '1080p Full HD'
     })
   } catch (err) {
     console.error('Erro no Vercel Handler /api/info:', err)
     res.status(500).json({ error: 'Não foi possível extrair dados do vídeo: ' + err.message })
   }
 }
+
 

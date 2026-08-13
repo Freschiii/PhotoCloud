@@ -102,14 +102,40 @@ function YtDownloader() {
     }
   }
 
-  const triggerDirectDownload = (downloadLink) => {
-    if (!downloadLink) return
-    const a = document.createElement('a')
-    a.href = downloadLink
-    a.setAttribute('download', '')
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
+  const [downloading, setDownloading] = useState(false)
+
+  const triggerDirectDownload = async (downloadLink, filename) => {
+    if (!downloadLink || downloading) return
+    setDownloading(true)
+    setStatusLogs(prev => [...prev, '[DOWNLOAD] Baixando arquivo de mídia diretamente para o seu dispositivo...'])
+
+    try {
+      const response = await fetch(downloadLink)
+      if (!response.ok) throw new Error(`Status HTTP ${response.status}`)
+      
+      const blob = await response.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = filename || `youtube_video.${isAudioOnly || quality === 'audio' ? 'mp3' : 'mp4'}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000)
+      setStatusLogs(prev => [...prev, '✔ Download concluído com sucesso e salvo no seu computador!'])
+    } catch (err) {
+      console.warn('Fallback para download via elemento oculto:', err)
+      setStatusLogs(prev => [...prev, '[DOWNLOAD] Iniciando salvamento automático...'])
+      const iframe = document.createElement('iframe')
+      iframe.style.display = 'none'
+      iframe.src = downloadLink
+      document.body.appendChild(iframe)
+      setTimeout(() => document.body.removeChild(iframe), 60000)
+    } finally {
+      setDownloading(false)
+    }
   }
 
   return (
@@ -259,11 +285,25 @@ function YtDownloader() {
             {/* Botões de Download */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
-                onClick={() => triggerDirectDownload(result.downloadUrl)}
-                className="flex-1 py-3 px-6 rounded-lg bg-green-500 hover:bg-green-400 text-black font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg transition-colors"
+                onClick={() => triggerDirectDownload(result.downloadUrl, result.filename)}
+                disabled={downloading}
+                className={`flex-1 py-3 px-6 rounded-lg font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg transition-all ${
+                  downloading
+                    ? 'bg-green-700 text-black cursor-wait animate-pulse'
+                    : 'bg-green-500 hover:bg-green-400 text-black'
+                }`}
               >
-                <Download className="w-4 h-4" />
-                BAIXAR AGORA ({quality === 'max' ? 'MELHOR QUALIDADE' : quality.toUpperCase()})
+                {downloading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    BAIXANDO PARA O SEU PC...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    BAIXAR AGORA ({quality === 'max' ? 'MELHOR QUALIDADE' : quality.toUpperCase()})
+                  </>
+                )}
               </button>
 
               {result.picker && result.picker.length > 1 && (
