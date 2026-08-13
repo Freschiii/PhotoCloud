@@ -29,7 +29,7 @@ export default async function handler(req, res) {
 
     const isAudioOnly = isAudio === 'true' || quality === 'audio'
 
-    let title = 'video'
+    let title = 'youtube_video'
     try {
       const infoCmd = `yt-dlp --get-title "${url}"`
       const { stdout } = await execAsync(infoCmd)
@@ -62,18 +62,13 @@ export default async function handler(req, res) {
     }
 
     const videoStream = await fetch(directUrl)
-    if (videoStream.ok && videoStream.body) {
+    if (videoStream.ok) {
       if (videoStream.headers.get('content-length')) {
         res.setHeader('Content-Length', videoStream.headers.get('content-length'))
       }
 
-      const reader = videoStream.body.getReader()
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        res.write(value)
-      }
-      return res.end()
+      const buffer = await videoStream.arrayBuffer()
+      return res.send(Buffer.from(buffer))
     }
 
     res.status(500).send('Não foi possível realizar o stream da mídia.')
@@ -84,6 +79,7 @@ export default async function handler(req, res) {
     }
   }
 }
+
 
 
 

@@ -28,7 +28,7 @@ app.post('/api/info', async (req, res) => {
       return res.status(400).json({ error: 'URL do YouTube não fornecida.' })
     }
 
-    const cmd = `yt-dlp -J --no-playlist "${url}"`
+    const cmd = `yt-dlp -J --extractor-args "youtube:player_client=android" --no-playlist "${url}"`
     const { stdout } = await execAsync(cmd, { maxBuffer: 10 * 1024 * 1024 })
     const info = JSON.parse(stdout)
 
@@ -54,20 +54,18 @@ app.get('/api/download', async (req, res) => {
     const { url, quality, isAudio } = req.query
 
     if (!url) {
-      return res.status(400).send('URL do YouTube inválida.')
+      return res.status(400).send('URL do YouTube não fornecida.')
     }
 
     const isAudioOnly = isAudio === 'true' || quality === 'audio'
 
-    // Obtém o título
-    let title = 'video'
+    let title = 'youtube_video'
     try {
       const infoCmd = `yt-dlp --get-title "${url}"`
       const { stdout } = await execAsync(infoCmd)
       title = sanitizeFilename(stdout.trim())
     } catch {}
 
-    // Seleciona o formato adequado via yt-dlp
     let formatArg = '-f "b"'
     if (isAudioOnly) {
       formatArg = '-f "ba/b"'
@@ -85,7 +83,9 @@ app.get('/api/download', async (req, res) => {
       return res.status(500).send('Não foi possível obter a URL direta de transmissão.')
     }
 
-    // Define cabeçalhos de download direto
+    res.setHeader('Access-Control-Allow-Origin', '*')
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+
     if (isAudioOnly) {
       res.setHeader('Content-Type', 'audio/mpeg')
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(title)}.mp3"`)
@@ -94,23 +94,17 @@ app.get('/api/download', async (req, res) => {
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(title)}.mp4"`)
     }
 
-    // Faz a transmissão dos dados com STATUS 200 OK
     const videoStream = await fetch(directUrl)
-    if (videoStream.ok && videoStream.body) {
+    if (videoStream.ok) {
       if (videoStream.headers.get('content-length')) {
         res.setHeader('Content-Length', videoStream.headers.get('content-length'))
       }
 
-      const reader = videoStream.body.getReader()
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        res.write(value)
-      }
-      return res.end()
+      const buffer = await videoStream.arrayBuffer()
+      return res.send(Buffer.from(buffer))
     }
 
-    res.status(500).send('Erro ao ler a transmissão do vídeo.')
+    res.status(500).send('Erro ao carregar os dados do vídeo do YouTube.')
   } catch (err) {
     console.error('Erro no /api/download:', err)
     if (!res.headersSent) {
