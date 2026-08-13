@@ -49,11 +49,11 @@ export default async function handler(req, res) {
       formatArg = `-f "bestaudio/best" -x --audio-format mp3 -o "${tempMp3}"`
       targetPath = tempMp3
     } else if (quality === '720') {
-      formatArg = `-f "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=720]+bestaudio/best" --merge-output-format mp4 -o "${tempFile}"`
+      formatArg = `-f "bestvideo[vcodec^=avc1][height<=720][ext=mp4]+bestaudio[acodec^=mp4a][ext=m4a]/bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=720]+bestaudio/best" --merge-output-format mp4 --postprocessor-args "ffmpeg:-c:v libx264 -c:a aac -pix_fmt yuv420p" -o "${tempFile}"`
     } else if (quality === '1080') {
-      formatArg = `-f "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=1080]+bestaudio/best" --merge-output-format mp4 -o "${tempFile}"`
+      formatArg = `-f "bestvideo[vcodec^=avc1][height<=1080][ext=mp4]+bestaudio[acodec^=mp4a][ext=m4a]/bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=1080]+bestaudio/best" --merge-output-format mp4 --postprocessor-args "ffmpeg:-c:v libx264 -c:a aac -pix_fmt yuv420p" -o "${tempFile}"`
     } else {
-      formatArg = `-f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best" --merge-output-format mp4 -o "${tempFile}"`
+      formatArg = `-f "bestvideo[vcodec^=avc1][ext=mp4]+bestaudio[acodec^=mp4a][ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best" --merge-output-format mp4 --postprocessor-args "ffmpeg:-c:v libx264 -c:a aac -pix_fmt yuv420p" -o "${tempFile}"`
     }
 
     const cmd = `yt-dlp ${formatArg} --extractor-args "youtube:formats=missing_pot" "${url}"`
