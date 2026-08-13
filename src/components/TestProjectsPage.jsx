@@ -46,14 +46,25 @@ function YtDownloader() {
     ])
 
     try {
-      let res = await fetch('/api/info', {
+      const isLocal = window.location.origin.includes('localhost')
+      const targetEndpoint = isLocal ? 'http://localhost:4000/api/info' : '/api/info'
+
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 12000)
+
+      let res = await fetch(targetEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url.trim() })
+        body: JSON.stringify({ url: url.trim() }),
+        signal: controller.signal
       }).catch(() => null)
 
+      clearTimeout(timeoutId)
+
+      // Fallback para /api/info se endpoint local específico não responder
       if (!res || !res.ok) {
-        res = await fetch('http://localhost:4000/api/info', {
+        const altEndpoint = isLocal ? '/api/info' : 'http://localhost:4000/api/info'
+        res = await fetch(altEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url: url.trim() })
