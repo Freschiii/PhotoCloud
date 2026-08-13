@@ -31,19 +31,64 @@ app.post('/api/info', async (req, res) => {
     }
 
     const cmd = `yt-dlp -J --extractor-args "youtube:formats=missing_pot" --no-playlist "${url}"`
-    const { stdout } = await execAsync(cmd, { maxBuffer: 15 * 1024 * 1024 })
+    const { stdout } = await execAsync(cmd, { maxBuffer: 20 * 1024 * 1024 })
     const info = JSON.parse(stdout)
 
     const title = info.title || 'Vídeo do YouTube'
     const duration = info.duration || 0
     const thumbnail = info.thumbnail || `https://img.youtube.com/vi/${info.id}/maxresdefault.jpg`
 
+    // Extrai qualidades de vídeo realmente disponíveis
+    const formats = info.formats || []
+    const resolutionsMap = new Map()
+
+    formats.forEach(f => {
+      if (f.height && f.vcodec !== 'none') {
+        const height = f.height
+        const key = height >= 2160 ? '2160' :
+                    height >= 1440 ? '1440' :
+                    height >= 1080 ? '1080' :
+                    height >= 720  ? '720' :
+                    height >= 480  ? '480' : String(height)
+
+        const label = height >= 2160 ? '🚀 4K Ultra HD (2160p 60fps)' :
+                      height >= 1440 ? '🎬 2K Quad HD (1440p)' :
+                      height >= 1080 ? '📺 1080p Full HD' :
+                      height >= 720  ? '📹 720p HD' :
+                      height >= 480  ? '📱 480p SD' : `${height}p`
+
+        const sub = height >= 2160 ? 'Qualidade Máxima Ultra HD (3840x2160)' :
+                    height >= 1440 ? 'Alta Definição 2K (2560x1440)' :
+                    height >= 1080 ? 'Full HD padrão (1920x1080)' :
+                    height >= 720  ? 'HD otimizado (1280x720)' : 'Resolução padrão'
+
+        if (!resolutionsMap.has(key)) {
+          resolutionsMap.set(key, {
+            id: key,
+            height: height,
+            label,
+            sub
+          })
+        }
+      }
+    })
+
+    const availableQualities = Array.from(resolutionsMap.values()).sort((a, b) => b.height - a.height)
+    
+    // Adiciona opção de áudio MP3
+    availableQualities.push({
+      id: 'audio',
+      height: 0,
+      label: '🎵 Apenas Áudio (MP3)',
+      sub: 'High Bitrate 320kbps (AAC/MP3)'
+    })
+
     res.json({
       title,
       duration,
       thumbnail,
       videoId: info.id,
-      maxQuality: '4K / 1080p 60fps'
+      availableQualities
     })
   } catch (err) {
     console.error('Erro no /api/info:', err)
@@ -78,20 +123,20 @@ app.get('/api/download', async (req, res) => {
     if (isAudioOnly) {
       formatArg = `-f "bestaudio/best" -x --audio-format mp3 -o "${tempMp3}"`
       targetPath = tempMp3
-    } else if (quality === '720') {
-      formatArg = `-f "bestvideo[vcodec^=avc1][height<=720][ext=mp4]+bestaudio[acodec^=mp4a][ext=m4a]/bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=720]+bestaudio/best" --merge-output-format mp4 --postprocessor-args "ffmpeg:-c:v libx264 -c:a aac -pix_fmt yuv420p" -o "${tempFile}"`
-    } else if (quality === '1080') {
-      formatArg = `-f "bestvideo[vcodec^=avc1][height<=1080][ext=mp4]+bestaudio[acodec^=mp4a][ext=m4a]/bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=1080]+bestaudio/best" --merge-output-format mp4 --postprocessor-args "ffmpeg:-c:v libx264 -c:a aac -pix_fmt yuv420p" -o "${tempFile}"`
     } else {
-      // MAX / 4K / 60FPS com compatibilidade nativa Adobe Premiere Pro (H.264 + AAC + YUV420P)
-      formatArg = `-f "bestvideo[vcodec^=avc1][ext=mp4]+bestaudio[acodec^=mp4a][ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best" --merge-output-format mp4 --postprocessor-args "ffmpeg:-c:v libx264 -c:a aac -pix_fmt yuv420p" -o "${tempFile}"`
+      const height = parseInt(quality) || 0
+      if (height > 0) {
+        formatArg = `-f "bestvideo[height<=${height}]+bestaudio/best" --merge-output-format mp4 --postprocessor-args "ffmpeg:-c:v libx264 -c:a aac -pix_fmt yuv420p" -o "${tempFile}"`
+      } else {
+        formatArg = `-f "bestvideo+bestaudio/best" --merge-output-format mp4 --postprocessor-args "ffmpeg:-c:v libx264 -c:a aac -pix_fmt yuv420p" -o "${tempFile}"`
+      }
     }
 
     const cmd = `yt-dlp ${formatArg} --extractor-args "youtube:formats=missing_pot" "${url}"`
-    await execAsync(cmd, { maxBuffer: 30 * 1024 * 1024 })
+    await execAsync(cmd, { maxBuffer: 40 * 1024 * 1024 })
 
     if (!fs.existsSync(targetPath)) {
-      return res.status(500).send('Não foi possível gerar o arquivo de mídia em alta qualidade.')
+      return res.status(500).send('Não foi possível gerar o arquivo de mídia na qualidade solicitada.')
     }
 
     const stats = fs.statSync(targetPath)
@@ -126,7 +171,7 @@ app.get('/api/download', async (req, res) => {
     } catch {}
 
     if (!res.headersSent) {
-      res.status(500).send('Falha ao processar download em alta resolução: ' + err.message)
+      res.status(500).send('Falha ao processar download na resolução desejada: ' + err.message)
     }
   }
 })

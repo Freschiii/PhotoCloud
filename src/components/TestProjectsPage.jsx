@@ -6,14 +6,13 @@ import { Download, Play, Music, Video, Sparkles, CheckCircle2, AlertCircle, Refr
 // --- Experimento 1: YouTube Downloader (Max Quality) ---
 function YtDownloader() {
   const [url, setUrl] = useState('')
-  const [quality, setQuality] = useState('max') // 'max' | '1080' | '720' | '480' | 'audio'
-  const [isAudioOnly, setIsAudioOnly] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
+  const [analyzedVideo, setAnalyzedVideo] = useState(null) // { title, thumbnail, videoId, availableQualities: [] }
+  const [selectedQuality, setSelectedQuality] = useState(null)
+  const [downloading, setDownloading] = useState(false)
   const [statusLogs, setStatusLogs] = useState([])
-  const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
 
-  // Extrai ID do vídeo do YouTube para thumbnail e embed
   const extractYtId = (inputUrl) => {
     if (!inputUrl) return null
     try {
@@ -24,7 +23,6 @@ function YtDownloader() {
       const idx = parts.findIndex(p => p === 'shorts' || p === 'embed')
       if (idx >= 0 && parts[idx + 1]) return parts[idx + 1]
     } catch {
-      // Regex fallback
       const match = inputUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/)
       return match ? match[1] : null
     }
@@ -32,29 +30,28 @@ function YtDownloader() {
   }
 
   const ytId = extractYtId(url)
-  const thumbnailUrl = ytId ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg` : null
 
-  const handleDownload = async (e) => {
+  // 1. Analisa a URL e busca as qualidades realmente disponíveis para este vídeo
+  const handleAnalyze = async (e) => {
     if (e) e.preventDefault()
     if (!url.trim()) return
 
-    setLoading(true)
+    setAnalyzing(true)
     setError(null)
-    setResult(null)
+    setAnalyzedVideo(null)
+    setSelectedQuality(null)
     setStatusLogs([
-      '[01/03] Analisando URL do YouTube...',
-      '[02/03] Conectando à Vercel Serverless API (/api/info)...'
+      '[01/02] Conectando ao YouTube API...',
+      '[02/02] Analisando resoluções e fluxos de mídia disponíveis...'
     ])
 
     try {
-      // 1. Tenta Vercel Serverless Function (/api/info)
       let res = await fetch('/api/info', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: url.trim() })
       }).catch(() => null)
 
-      // Fallback para localhost:4000 se /api/info relativo não responder
       if (!res || !res.ok) {
         res = await fetch('http://localhost:4000/api/info', {
           method: 'POST',
@@ -65,60 +62,60 @@ function YtDownloader() {
 
       if (res && res.ok) {
         const info = await res.json()
-        setStatusLogs(prev => [...prev, '[03/03] ✔ Informações extraídas via Vercel Serverless API! Gerando link de download...'])
-
-        // Base URL dinâmica: Vercel cloud ou local
-        const apiBase = window.location.origin.includes('localhost') && !res.url.includes('localhost') 
-          ? '' 
-          : res.url.includes('localhost:4000') ? 'http://localhost:4000' : ''
-
-        const directDownloadLink = `${apiBase}/api/download?url=${encodeURIComponent(url.trim())}&quality=${quality}&isAudio=${isAudioOnly}`
+        setAnalyzedVideo(info)
         
-        setResult({
-          downloadUrl: directDownloadLink,
-          title: info.title,
-          thumbnail: info.thumbnail || thumbnailUrl,
-          maxQuality: info.maxQuality || quality.toUpperCase(),
-          filename: `${info.title || 'video'}.${isAudioOnly || quality === 'audio' ? 'mp3' : 'mp4'}`,
-          type: isAudioOnly || quality === 'audio' ? 'audio' : 'video',
-          isServerless: true
-        })
+        // Seleciona por padrão a maior qualidade encontrada
+        if (info.availableQualities && info.availableQualities.length > 0) {
+          setSelectedQuality(info.availableQualities[0].id)
+        }
+
+        setStatusLogs(prev => [
+          ...prev,
+          `✔ Vídeo analisado com sucesso: "${info.title}"`,
+          `✔ ${info.availableQualities?.length || 0} qualidades compatíveis encontradas.`
+        ])
       } else {
-        throw new Error('Servidor indisponível no momento.')
+        throw new Error('Não foi possível obter dados do vídeo. Verifique se a URL está correta.')
       }
     } catch (err) {
-      console.warn('Servidor serverless offline, tentando rota alternativa:', err)
-      
-      const directDownloadLink = `/api/download?url=${encodeURIComponent(url.trim())}&quality=${quality}&isAudio=${isAudioOnly}`
-      setResult({
-        downloadUrl: directDownloadLink,
-        filename: `youtube_${ytId || 'download'}.${isAudioOnly || quality === 'audio' ? 'mp3' : 'mp4'}`,
-        type: isAudioOnly || quality === 'audio' ? 'audio' : 'video',
-        isServerless: true
-      })
-      setStatusLogs(prev => [...prev, '[03/03] ✔ Link de streaming Serverless gerado com sucesso!'])
+      console.error('Erro ao analisar vídeo:', err)
+      setError(err.message || 'Falha ao analisar vídeo.')
+      setStatusLogs(prev => [...prev, '[ERRO] ' + (err.message || 'Falha na análise.')])
     } finally {
-      setLoading(false)
+      setAnalyzing(false)
     }
   }
 
-  const [downloading, setDownloading] = useState(false)
+  // 2. Dispara o download da qualidade selecionada
+  const handleStartDownload = async (qualityId) => {
+    if (!url.trim() || downloading) return
+    const qId = qualityId || selectedQuality || 'max'
+    const isAudio = qId === 'audio'
 
-  const triggerDirectDownload = async (downloadLink, filename) => {
-    if (!downloadLink || downloading) return
     setDownloading(true)
-    setStatusLogs(prev => [...prev, '[DOWNLOAD] Baixando arquivo de mídia diretamente para o seu dispositivo...'])
+    setStatusLogs(prev => [
+      ...prev,
+      `[DOWNLOAD] Solicitando mídia na resolução (${qId.toUpperCase()})...`,
+      '[PROCESSO] Mesclando faixas em H.264/AAC para compatibilidade com Premiere...'
+    ])
 
     try {
+      const apiBase = window.location.origin.includes('localhost') ? 'http://localhost:4000' : ''
+      const downloadLink = `${apiBase}/api/download?url=${encodeURIComponent(url.trim())}&quality=${qId}&isAudio=${isAudio}`
+
       const response = await fetch(downloadLink)
       if (!response.ok) throw new Error(`Status HTTP ${response.status}`)
       
       const blob = await response.blob()
       const blobUrl = URL.createObjectURL(blob)
       
+      const safeTitle = (analyzedVideo?.title || 'youtube_video').replace(/[^\w\s\-\.]/gi, '_')
+      const ext = isAudio ? 'mp3' : 'mp4'
+      const filename = `${safeTitle}_${qId}p.${ext}`
+
       const a = document.createElement('a')
       a.href = blobUrl
-      a.download = filename || `youtube_video.${isAudioOnly || quality === 'audio' ? 'mp3' : 'mp4'}`
+      a.download = filename
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -126,13 +123,8 @@ function YtDownloader() {
       setTimeout(() => URL.revokeObjectURL(blobUrl), 10000)
       setStatusLogs(prev => [...prev, '✔ Download concluído com sucesso e salvo no seu computador!'])
     } catch (err) {
-      console.warn('Fallback para download via elemento oculto:', err)
-      setStatusLogs(prev => [...prev, '[DOWNLOAD] Iniciando salvamento automático...'])
-      const iframe = document.createElement('iframe')
-      iframe.style.display = 'none'
-      iframe.src = downloadLink
-      document.body.appendChild(iframe)
-      setTimeout(() => document.body.removeChild(iframe), 60000)
+      console.error('Erro no download:', err)
+      setStatusLogs(prev => [...prev, '[ERRO] Falha no download: ' + err.message])
     } finally {
       setDownloading(false)
     }
@@ -148,17 +140,17 @@ function YtDownloader() {
             <Video className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white tracking-wide">YouTube Video Downloader (Vercel Serverless API)</h2>
-            <p className="text-xs text-green-700">Extração Serverless na nuvem (4K, 1080p ou MP3)</p>
+            <h2 className="text-lg font-bold text-white tracking-wide">YouTube Video Downloader (Análise de Qualidade)</h2>
+            <p className="text-xs text-green-700">Analisa qualidades reais do vídeo (4K, 2K, 1080p, 720p ou MP3) em H.264/AAC</p>
           </div>
         </div>
         <span className="text-[10px] px-2.5 py-1 bg-green-950 text-green-400 border border-green-800 rounded font-mono">
-          CLOUD SERVERLESS: VERCEL
+          ENGINE: YT-DLP + FFMPEG 4K
         </span>
       </div>
 
-      {/* Formulário */}
-      <form onSubmit={handleDownload} className="space-y-5">
+      {/* Passo 1: Formulário de Entrada da URL */}
+      <form onSubmit={handleAnalyze} className="space-y-5">
         <div>
           <label className="block text-xs font-semibold text-green-400 mb-2">
             $ URL DO VÍDEO DO YOUTUBE
@@ -167,15 +159,18 @@ function YtDownloader() {
             <input
               type="url"
               value={url}
-              onChange={e => setUrl(e.target.value)}
-              placeholder="Cole aqui a URL (ex: https://www.youtube.com/watch?v=... ou https://youtu.be/...)"
+              onChange={e => {
+                setUrl(e.target.value)
+                if (analyzedVideo) setAnalyzedVideo(null)
+              }}
+              placeholder="Cole a URL do vídeo aqui (ex: https://www.youtube.com/watch?v=... ou https://youtu.be/...)"
               className="w-full px-4 py-3.5 bg-black/60 border border-green-900 text-green-200 placeholder-green-900 rounded-lg focus:outline-none focus:border-green-500 font-mono text-sm transition-all"
               required
             />
             {url && (
               <button
                 type="button"
-                onClick={() => { setUrl(''); setResult(null); setError(null) }}
+                onClick={() => { setUrl(''); setAnalyzedVideo(null); setError(null); setStatusLogs([]) }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-green-700 hover:text-green-400"
               >
                 LIMPAR
@@ -184,56 +179,112 @@ function YtDownloader() {
           </div>
         </div>
 
-        {/* Qualidade e Opções */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {[
-            { id: 'max', label: '🚀 MAX (4K / 60FPS)', sub: 'Qualidade máxima disponível' },
-            { id: '1080', label: '🎬 1080p Full HD', sub: 'Alta qualidade (padrão)' },
-            { id: '720', label: '📺 720p HD', sub: 'Tamanho otimizado' },
-            { id: 'audio', label: '🎵 Apenas Áudio (MP3)', sub: 'High Bitrate 320kbps' },
-          ].map(q => (
+        {/* Botão de Analisar */}
+        {!analyzedVideo && (
+          <button
+            type="submit"
+            disabled={analyzing || !url.trim()}
+            className={`w-full py-4 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all duration-200 shadow-xl ${
+              analyzing || !url.trim()
+                ? 'bg-green-950/40 border border-green-900 text-green-900 cursor-not-allowed'
+                : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-black font-extrabold shadow-green-900/30'
+            }`}
+          >
+            {analyzing ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                ANALISANDO VÍDEO E RESOLUÇÕES DISPONÍVEIS...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                ANALISAR VÍDEO E MOSTRAR QUALIDADES
+              </>
+            )}
+          </button>
+        )}
+      </form>
+
+      {/* Passo 2: Seletor Dinâmico de Qualidade (Aparece SOMENTE após a análise) */}
+      <AnimatePresence>
+        {analyzedVideo && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 15 }}
+            className="mt-6 p-5 border border-green-500/40 bg-green-950/20 rounded-xl space-y-5"
+          >
+            {/* Card com Detalhes do Vídeo */}
+            <div className="flex flex-col md:flex-row items-center gap-4 pb-4 border-b border-green-900/40">
+              {analyzedVideo.thumbnail && (
+                <div className="relative w-full md:w-48 aspect-video bg-black rounded-lg overflow-hidden border border-green-900 shrink-0">
+                  <img src={analyzedVideo.thumbnail} alt="Thumbnail" className="w-full h-full object-cover" />
+                </div>
+              )}
+              <div className="flex-1 space-y-1 text-left">
+                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-green-500/10 border border-green-500/30 text-green-400 text-[10px] font-bold">
+                  <CheckCircle2 className="w-3 h-3" />
+                  VÍDEO PRONTO PARA EDIÇÃO (H.264 / AAC)
+                </div>
+                <h3 className="text-sm font-bold text-white font-mono break-all line-clamp-2">
+                  {analyzedVideo.title}
+                </h3>
+                <p className="text-xs text-green-600">
+                  Selecione abaixo a resolução desejada para baixar diretamente:
+                </p>
+              </div>
+            </div>
+
+            {/* Resoluções Realmente Disponíveis para este Vídeo */}
+            <div>
+              <label className="block text-xs font-bold text-green-400 mb-3 font-mono">
+                $ QUALIDADES DISPONÍVEIS PARA ESTE VÍDEO:
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {analyzedVideo.availableQualities?.map(q => (
+                  <button
+                    key={q.id}
+                    type="button"
+                    onClick={() => setSelectedQuality(q.id)}
+                    className={`p-3 text-left rounded-lg border transition-all ${
+                      selectedQuality === q.id
+                        ? 'border-green-500 bg-green-950/60 text-green-300 shadow-lg ring-1 ring-green-500'
+                        : 'border-green-900/50 bg-black/40 text-green-700 hover:border-green-700 hover:text-green-300'
+                    }`}
+                  >
+                    <div className="text-xs font-bold mb-0.5">{q.label}</div>
+                    <div className="text-[10px] text-green-600 font-mono">{q.sub}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Botão Final de Download na Resolução Escolhida */}
             <button
-              key={q.id}
               type="button"
-              onClick={() => {
-                setQuality(q.id)
-                setIsAudioOnly(q.id === 'audio')
-              }}
-              className={`p-3 text-left rounded-lg border transition-all ${
-                quality === q.id
-                  ? 'border-green-500 bg-green-950/40 text-green-300 shadow-lg'
-                  : 'border-green-900/50 bg-black/30 text-green-800 hover:border-green-700 hover:text-green-400'
+              onClick={() => handleStartDownload(selectedQuality)}
+              disabled={downloading || !selectedQuality}
+              className={`w-full py-4 rounded-lg font-extrabold text-sm flex items-center justify-center gap-2 transition-all shadow-xl ${
+                downloading
+                  ? 'bg-green-700 text-black cursor-wait animate-pulse'
+                  : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-black'
               }`}
             >
-              <div className="text-xs font-bold mb-0.5">{q.label}</div>
-              <div className="text-[10px] text-green-700">{q.sub}</div>
+              {downloading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  BAIXANDO EM ALTA QUALIDADE...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  BAIXAR AGORA NA QUALIDADE SELECIONADA ({selectedQuality ? selectedQuality.toUpperCase() : ''})
+                </>
+              )}
             </button>
-          ))}
-        </div>
-
-        {/* Botão de Processar */}
-        <button
-          type="submit"
-          disabled={loading || !url.trim()}
-          className={`w-full py-4 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all duration-200 shadow-xl ${
-            loading || !url.trim()
-              ? 'bg-green-950/40 border border-green-900 text-green-900 cursor-not-allowed'
-              : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-black font-extrabold shadow-green-900/30'
-          }`}
-        >
-          {loading ? (
-            <>
-              <RefreshCw className="w-4 h-4 animate-spin" />
-              PROCESSANDO VÍDEO...
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4" />
-              OBTER LINK DE DOWNLOAD
-            </>
-          )}
-        </button>
-      </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Logs do Terminal */}
       {statusLogs.length > 0 && (
@@ -247,84 +298,7 @@ function YtDownloader() {
         </div>
       )}
 
-      {/* Resultado / Preview */}
-      <AnimatePresence>
-        {result && (
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 15 }}
-            className="mt-6 p-5 border border-green-500/40 bg-green-950/20 rounded-xl space-y-4"
-          >
-            <div className="flex flex-col md:flex-row items-center gap-4">
-              {thumbnailUrl && (
-                <div className="relative w-full md:w-56 aspect-video bg-black rounded-lg overflow-hidden border border-green-900 shrink-0">
-                  <img src={thumbnailUrl} alt="Thumbnail" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-2">
-                    <span className="text-[10px] text-green-400 bg-black/70 px-2 py-0.5 rounded font-mono">
-                      ID: {ytId}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex-1 space-y-2 text-left">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-bold">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  {result.type === 'audio' ? 'Áudio MP3 Pronto' : `Vídeo ${quality.toUpperCase()} Pronto`}
-                </div>
-                <h3 className="text-sm font-bold text-white font-mono break-all">
-                  {result.filename}
-                </h3>
-                <p className="text-xs text-green-600">
-                  Resolução e áudio otimizados para máxima taxa de bits.
-                </p>
-              </div>
-            </div>
-
-            {/* Botões de Download */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <button
-                onClick={() => triggerDirectDownload(result.downloadUrl, result.filename)}
-                disabled={downloading}
-                className={`flex-1 py-3 px-6 rounded-lg font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg transition-all ${
-                  downloading
-                    ? 'bg-green-700 text-black cursor-wait animate-pulse'
-                    : 'bg-green-500 hover:bg-green-400 text-black'
-                }`}
-              >
-                {downloading ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    BAIXANDO PARA O SEU PC...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    BAIXAR AGORA ({quality === 'max' ? 'MELHOR QUALIDADE' : quality.toUpperCase()})
-                  </>
-                )}
-              </button>
-
-              {result.picker && result.picker.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto">
-                  {result.picker.slice(1, 4).map((p, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => triggerDirectDownload(p.url)}
-                      className="px-3 py-2 border border-green-800 text-green-400 hover:bg-green-900/40 text-xs rounded font-mono whitespace-nowrap"
-                    >
-                      Opção {idx + 2}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Erro */}
+      {/* Mensagem de Erro */}
       {error && (
         <div className="mt-6 p-4 border border-red-800/60 bg-red-950/30 text-red-400 rounded-lg text-xs font-mono flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
