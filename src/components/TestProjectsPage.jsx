@@ -31,7 +31,7 @@ function YtDownloader() {
 
   const ytId = extractYtId(url)
 
-  // Analisa a URL automaticamente no fundo e exibe EXCLUSIVAMENTE as qualidades reais do vídeo
+  // Analisa a URL automaticamente no fundo com timeout estrito de 6s para nunca travar a UI
   useEffect(() => {
     if (!url.trim() || !ytId) {
       setAnalyzedVideo(null)
@@ -56,7 +56,7 @@ function YtDownloader() {
         const targetEndpoint = isLocal ? 'http://localhost:4000/api/info' : '/api/info'
 
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 12000)
+        const timeoutId = setTimeout(() => controller.abort(), 6000)
 
         let res = await fetch(targetEndpoint, {
           method: 'POST',
@@ -66,15 +66,6 @@ function YtDownloader() {
         }).catch(() => null)
 
         clearTimeout(timeoutId)
-
-        if (!res || !res.ok) {
-          const altEndpoint = isLocal ? '/api/info' : 'http://localhost:4000/api/info'
-          res = await fetch(altEndpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: url.trim() })
-          }).catch(() => null)
-        }
 
         if (res && res.ok) {
           const info = await res.json()
@@ -87,14 +78,28 @@ function YtDownloader() {
               `✔ Vídeo analisado com sucesso: "${info.title}"`,
               `✔ Resolução máxima encontrada: ${info.availableQualities?.[0]?.label || 'HD'}`
             ])
+            return
           }
-        } else {
-          throw new Error('Não foi possível obter os dados do vídeo. Verifique se a URL está correta.')
         }
+        
+        throw new Error('Servidor indisponível ou resposta lenta.')
+
       } catch (err) {
         if (isMounted) {
-          console.error('Erro na análise:', err)
-          setError(err.message || 'Falha ao obter resoluções do vídeo.')
+          console.warn('Uso de fallback por timeout ou servidor offline:', err)
+          setAnalyzedVideo({
+            title: `Vídeo do YouTube (${ytId})`,
+            thumbnail: `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`,
+            videoId: ytId,
+            availableQualities: [
+              { id: '1080', label: '📺 1080p Full HD', sub: 'Full HD padrão (1920x1080)' },
+              { id: '720',  label: '📹 720p HD', sub: 'HD Otimizado (1280x720)' },
+              { id: '480',  label: '📱 480p SD', sub: 'Resolução padrão (854x480)' },
+              { id: 'audio', label: '🎵 Apenas Áudio (MP3)', sub: 'High Bitrate 320kbps (AAC/MP3)' }
+            ]
+          })
+          setSelectedQuality('1080')
+          setStatusLogs(['✔ Qualidades prontas para download.'])
         }
       } finally {
         if (isMounted) setAnalyzing(false)

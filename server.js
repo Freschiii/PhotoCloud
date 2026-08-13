@@ -9,7 +9,12 @@ const execAsync = promisify(exec)
 const app = express()
 const PORT = process.env.PORT || 4000
 
-app.use(cors())
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}))
+app.options('*', cors())
 app.use(express.json())
 
 function sanitizeFilename(name) {
@@ -24,6 +29,8 @@ app.get('/api/health', (req, res) => {
 })
 
 app.post('/api/info', async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
   try {
     const { url } = req.body
     if (!url) {
