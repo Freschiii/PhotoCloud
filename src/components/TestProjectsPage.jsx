@@ -67,6 +67,15 @@ function YtDownloader() {
 
         clearTimeout(timeoutId)
 
+        if (!res || !res.ok) {
+          const altEndpoint = isLocal ? '/api/info' : 'http://localhost:4000/api/info'
+          res = await fetch(altEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: url.trim() })
+          }).catch(() => null)
+        }
+
         if (res && res.ok) {
           const info = await res.json()
           if (isMounted) {
@@ -82,24 +91,13 @@ function YtDownloader() {
           }
         }
         
-        throw new Error('Servidor indisponível ou resposta lenta.')
+        throw new Error('Não foi possível analisar este vídeo. Verifique se o servidor está online.')
 
       } catch (err) {
         if (isMounted) {
-          console.warn('Uso de fallback por timeout ou servidor offline:', err)
-          setAnalyzedVideo({
-            title: `Vídeo do YouTube (${ytId})`,
-            thumbnail: `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`,
-            videoId: ytId,
-            availableQualities: [
-              { id: '1080', label: '📺 1080p Full HD', sub: 'Full HD padrão (1920x1080)' },
-              { id: '720',  label: '📹 720p HD', sub: 'HD Otimizado (1280x720)' },
-              { id: '480',  label: '📱 480p SD', sub: 'Resolução padrão (854x480)' },
-              { id: 'audio', label: '🎵 Apenas Áudio (MP3)', sub: 'High Bitrate 320kbps (AAC/MP3)' }
-            ]
-          })
-          setSelectedQuality('1080')
-          setStatusLogs(['✔ Qualidades prontas para download.'])
+          console.error('Erro na análise real:', err)
+          setError(err.message || 'Falha ao analisar vídeo.')
+          setStatusLogs(prev => [...prev, '[ERRO] ' + (err.message || 'Falha na análise.')])
         }
       } finally {
         if (isMounted) setAnalyzing(false)
