@@ -130,7 +130,7 @@ app.get('/api/download', async (req, res) => {
       }
     }
 
-    const cmd = `python -m yt_dlp --js-runtimes node ${formatArg} "${url}"`
+    const cmd = `python -m yt_dlp --js-runtimes node --no-part ${formatArg} "${url}"`
     await execAsync(cmd, { maxBuffer: 150 * 1024 * 1024 })
 
     if (!fs.existsSync(targetPath)) {
